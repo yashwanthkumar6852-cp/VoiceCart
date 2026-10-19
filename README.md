@@ -18,31 +18,31 @@ The system performs:
 
 ```mermaid
 graph TD
-    User([👤 User Voice / Text Query]) --> Frontend[📱 VoiceCart Web/Mobile Client]
-    Frontend -->|Web Speech / Audio Stream| VoiceEngine[🗣️ STT & Voice Feedback]
-    Frontend -->|POST /api/voice/process| Backend[⚙️ VoiceCart Express Backend]
+    User(["👤 User Voice / Text Query"]) --> Frontend["📱 VoiceCart Web/Mobile Client"]
+    Frontend -->|"Web Speech / Audio Stream"| VoiceEngine["🗣️ STT & Voice Feedback"]
+    Frontend -->|"POST /api/voice/process"| Backend["⚙️ VoiceCart Express Backend"]
     
-    Backend --> IntentParser[🧠 Multilingual Intent & Slot Parser]
-    IntentParser --> Aggregator[⚡ Parallel Store Aggregator]
+    Backend --> IntentParser["🧠 Multilingual Intent & Slot Parser"]
+    IntentParser --> Aggregator["⚡ Parallel Store Aggregator"]
     
-    Aggregator -->|AWS SigV4 PA-API 5.0| AmazonAPI[🟠 Amazon India PA-API 5.0]
-    Aggregator -->|Affiliate REST API| FlipkartAPI[🔵 Flipkart Affiliate API]
-    Aggregator -->|Partner Feed Adapter| MeeshoAPI[🌸 Meesho Partner Feed]
+    Aggregator -->|"AWS SigV4 PA-API 5.0"| AmazonAPI["🟠 Amazon India PA-API 5.0"]
+    Aggregator -->|"Affiliate REST API"| FlipkartAPI["🔵 Flipkart Affiliate API"]
+    Aggregator -->|"Partner Feed Adapter"| MeeshoAPI["🌸 Meesho Partner Feed"]
     
-    AmazonAPI --> Cache[(⚡ Redis Cache / Memory)]
+    AmazonAPI --> Cache[("⚡ Redis Cache / Memory")]
     FlipkartAPI --> Cache
     MeeshoAPI --> Cache
     
-    Cache --> RankingEngine[📊 Explainable Ranking Algorithm]
-    RankingEngine --> ScoreCalc[🧮 Score 0-100: Price 35%, Rating 25%, Quality 20%, Value 10%, Speed 10%]
-    ScoreCalc --> Badges[🏷️ Best Overall, Lowest Price, Fastest Delivery]
+    Cache --> RankingEngine["📊 Explainable Ranking Algorithm"]
+    RankingEngine --> ScoreCalc["🧮 Score 0-100: Price 35%, Rating 25%, Quality 20%, Value 10%, Speed 10%"]
+    ScoreCalc --> Badges["🏷️ Best Overall, Lowest Price, Fastest Delivery"]
     
     Badges --> Frontend
-    Frontend --> Cart[🛒 Cart & Live Price Re-Verification]
-    Cart --> AffiliateDeepLink[🔗 Official Merchant Checkout Link (Amazon/Flipkart/Meesho)]
-    Cart --> DemoGateway[💳 VoiceCart Built-in Demo Payment Gateway]
+    Frontend --> Cart["🛒 Cart & Live Price Re-Verification"]
+    Cart --> AffiliateDeepLink["🔗 Official Merchant Checkout Link - Amazon, Flipkart, Meesho"]
+    Cart --> DemoGateway["💳 VoiceCart Built-in Demo Payment Gateway"]
     
-    Frontend --> OrderTracker[📦 SMS/Email Order ID Parser & Store Tracking]
+    Frontend --> OrderTracker["📦 SMS/Email Order ID Parser & Store Tracking"]
 ```
 
 ---
@@ -68,11 +68,11 @@ VoiceCart features an enterprise-style, self-contained **Demo Payment Gateway** 
 
 ```mermaid
 flowchart LR
-    Cart[🛒 Cart] -->|1. Pay Now Clicked| CreateOrder[📝 Server: Create Order<br/>POST /api/payments/create]
-    CreateOrder -->|2. order_DEMO_xxxxxx| PaymentPage[💳 Payment Gateway Modal<br/>UPI / Cards / Netbanking / Wallets / COD]
-    PaymentPage -->|3. User Authorizes| Confirm[⚡ Server: Confirm Payment<br/>POST /api/payments/confirm]
-    Confirm -->|4. pay_DEMO_xxxxxx| Status[🔄 Server: Poll Status<br/>GET /api/payments/:orderId/status]
-    Status -->|5. Verified State| Receipt[🧾 Result Screen & Download PDF Receipt]
+    Cart["🛒 Cart"] -->|"1. Pay Now Clicked"| CreateOrder["📝 Server: Create Order<br/>POST /api/payments/create"]
+    CreateOrder -->|"2. order_DEMO_xxxxxx"| PaymentPage["💳 Payment Gateway Modal<br/>UPI / Cards / Netbanking / Wallets / COD"]
+    PaymentPage -->|"3. User Authorizes"| Confirm["⚡ Server: Confirm Payment<br/>POST /api/payments/confirm"]
+    Confirm -->|"4. pay_DEMO_xxxxxx"| Status["🔄 Server: Poll Status<br/>GET /api/payments/:orderId/status"]
+    Status -->|"5. Verified State"| Receipt["🧾 Result Screen & Download PDF Receipt"]
 ```
 
 ### 1. Payment Methods Supported
@@ -117,11 +117,11 @@ VoiceCart is fully configured for 100% free online hosting on mobile and desktop
 
 ```mermaid
 graph LR
-    Client[📱 Mobile & Desktop User<br/>https://voicecart.vercel.app] -->|Same-Origin Request| Vercel[⚡ Vercel Edge SPA]
-    Vercel -->|Rewrite /api/(.*)| Render[🚀 Render Web Service<br/>https://voicecart-backend.onrender.com]
-    Render -->|Persistent Pool| Postgres[(🐘 Neon / Supabase PostgreSQL)]
-    Render -->|Live Shopping API| SerpApi[🔍 SerpApi Google Shopping India]
-    Render -->|Speech Recognition| Sarvam[🎙️ Sarvam AI / Groq Whisper]
+    Client["📱 Mobile & Desktop User<br/>https://voicecart.vercel.app"] -->|"Same-Origin Request"| Vercel["⚡ Vercel Edge SPA"]
+    Vercel -->|"Rewrite /api/(.*)"| Render["🚀 Render Web Service<br/>https://voicecart-backend.onrender.com"]
+    Render -->|"Persistent Pool"| Postgres[("🐘 Neon / Supabase PostgreSQL")]
+    Render -->|"Live Shopping API"| SerpApi["🔍 SerpApi Google Shopping India"]
+    Render -->|"Speech Recognition"| Sarvam["🎙️ Sarvam AI / Groq Whisper"]
 ```
 
 ---
