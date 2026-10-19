@@ -1,0 +1,25 @@
+{
+  "name": "voicecart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VoiceCart - AI Voice-Controlled Multi-Store Shopping Platform",
+  "scripts": {
+    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev:lan": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run dev:lan\"",
+    "start:prod": "npm --prefix backend start",
+    "check:api": "npm --prefix backend run check:api",
+    "test": "npm --prefix backend test",
+    "images:cache": "npm --prefix backend run images:cache",
+    "catalog:ingest": "npm --prefix backend run catalog:ingest",
+    "catalog:status": "npm --prefix backend run catalog:status",
+    "catalog:refresh-prices": "npm --prefix backend run catalog:refresh-prices",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

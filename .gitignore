@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production Builds
+dist/
+**/dist/
+build/
+**/build/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Environment Variables & Secrets (CRITICAL: Do NOT commit .env files)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs & Diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing & Coverage
+coverage/
+**/coverage/
+.nyc_output/
+
+# Antigravity & Agent workspace artifacts
+.agents/
+.gemini/
+
+# Local Database and Image Cache files
+data/
+**/data/
+data/images
+**/data/images/
+*.db
+*.sqlite
+*.sqlite3

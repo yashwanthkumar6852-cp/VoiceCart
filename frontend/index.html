@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Filter noisy logs injected by third-party browser extensions (e.g. MetaMask / Web3 wallets)
+      (function() {
+        const origWarn = console.warn;
+        console.warn = function(...args) {
+          if (args.length > 0 && typeof args[0] === 'string' && (args[0].includes('ObjectMultiplex') || args[0].includes('MaxListenersExceededWarning'))) {
+            return;
+          }
+          origWarn.apply(console, args);
+        };
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>VoiceCart — Multi-Store AI Voice Shopping Assistant</title>
+    <meta name="description" content="Real-time voice-controlled shopping comparator across Amazon India, Flipkart, and Meesho in English, Hindi, and Kannada." />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="VoiceCart — Multi-Store AI Voice Shopping Assistant" />
+    <meta property="og:description" content="Compare live prices across Amazon, Flipkart, and Meesho using voice commands in English, Hindi, and Kannada." />
+    <meta property="og:image" content="/favicon.svg" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="VoiceCart — Multi-Store AI Voice Shopping Assistant" />
+    <meta name="twitter:description" content="Compare live prices across Amazon, Flipkart, and Meesho using voice commands in English, Hindi, and Kannada." />
+    <meta name="twitter:image" content="/favicon.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Kannada:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.warn('SW registration failed:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

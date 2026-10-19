@@ -1,0 +1,863 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Package,
+  Search,
+  Filter,
+  SlidersHorizontal,
+  ChevronRight,
+  ExternalLink,
+  Copy,
+  Check,
+  RotateCcw,
+  Plus,
+  ShoppingBag,
+  Calendar,
+  Truck,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowUpDown,
+  RefreshCw,
+  ChevronLeft,
+  Store
+} from 'lucide-react';
+import { OrderRecord, OrderStatus, StoreName } from '../types';
+import { api } from '../services/api';
+import { AddExternalOrderModal } from '../components/orders/OrdersModals';
+import { SupportedLanguage, translations } from '../i18n/translations';
+import { ProductImage } from '../components/ProductImage';
+
+interface Props {
+  onNavigateRoute: (route: string) => void;
+  onAddToCart?: (product: any, quantity?: number) => void;
+  language?: SupportedLanguage;
+  showToast?: (msg: string) => void;
+}
+
+export const OrdersListPage: React.FC<Props> = ({
+  onNavigateRoute,
+  language = 'en',
+  showToast
+}) => {
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Filters State
+  const [activeStatusTab, setActiveStatusTab] = useState<'all' | 'in_progress' | 'delivered' | 'cancelled'>('all');
+  const [selectedStore, setSelectedStore] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
+  // Modals & Interactivity
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
+
+  const t = translations[language] || translations.en;
+
+  const fetchOrders = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await api.getOrders({
+        status: activeStatusTab === 'all' ? undefined : activeStatusTab,
+        store: selectedStore === 'all' ? undefined : selectedStore,
+        dateRange: dateRange === 'all' ? undefined : dateRange,
+        search: searchQuery.trim() ? searchQuery.trim() : undefined,
+        sort: sortBy,
+        page: currentPage,
+        limit: 10
+      });
+
+      setOrders(res.orders || []);
+      setTotalCount(res.total || 0);
+      setTotalPages(res.totalPages || 1);
+    } catch (err: any) {
+      console.error('Failed to load orders:', err);
+      setErrorMessage(err.response?.data?.error || 'Failed to load your orders. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeStatusTab, selectedStore, dateRange, searchQuery, sortBy, currentPage]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const handleCopy = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedOrderId(id);
+    setTimeout(() => {
+      setCopiedOrderId((cur) => (cur === id ? null : cur));
+    }, 2000);
+  };
+
+  const handleReorder = async (order: OrderRecord, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setReorderingId(order.orderId);
+    try {
+      const res = await api.reorderOrder(order.orderId);
+      if (showToast) {
+        showToast(res.message || 'Items added to your basket with live prices verified!');
+      }
+      onNavigateRoute('/cart');
+    } catch (err: any) {
+      if (showToast) {
+        showToast(err.response?.data?.error || 'Failed to reorder items.');
+      }
+    } finally {
+      setReorderingId(null);
+    }
+  };
+
+  const getStatusBadge = (status: OrderStatus | string) => {
+    const s = String(status || '').toUpperCase();
+    if (s === 'DELIVERED') {
+      return {
+        label: 'Delivered',
+        bg: 'rgba(16, 185, 129, 0.15)',
+        color: '#10b981',
+        border: '1px solid #10b981',
+        icon: CheckCircle2
+      };
+    }
+    if (s === 'OUT_FOR_DELIVERY') {
+      return {
+        label: 'Out for Delivery',
+        bg: 'rgba(245, 158, 11, 0.15)',
+        color: '#f59e0b',
+        border: '1px solid #f59e0b',
+        icon: Truck
+      };
+    }
+    if (s === 'SHIPPED') {
+      return {
+        label: 'Shipped',
+        bg: 'rgba(139, 92, 246, 0.15)',
+        color: '#8b5cf6',
+        border: '1px solid #8b5cf6',
+        icon: Package
+      };
+    }
+    if (s === 'PACKED') {
+      return {
+        label: 'Packed',
+        bg: 'rgba(99, 102, 241, 0.15)',
+        color: '#6366f1',
+        border: '1px solid #6366f1',
+        icon: Package
+      };
+    }
+    if (s === 'CANCELLED') {
+      return {
+        label: 'Cancelled',
+        bg: 'rgba(239, 68, 68, 0.15)',
+        color: '#ef4444',
+        border: '1px solid #ef4444',
+        icon: AlertTriangle
+      };
+    }
+    if (s === 'COD_PENDING') {
+      return {
+        label: 'COD Pending',
+        bg: 'rgba(20, 184, 166, 0.15)',
+        color: '#14b8a6',
+        border: '1px solid #14b8a6',
+        icon: Clock
+      };
+    }
+    if (s === 'PENDING_VERIFICATION' || s === 'PAYMENT_PENDING') {
+      return {
+        label: 'Payment Pending',
+        bg: 'rgba(234, 179, 8, 0.15)',
+        color: '#eab308',
+        border: '1px solid #eab308',
+        icon: Clock
+      };
+    }
+    return {
+      label: 'Placed',
+      bg: 'rgba(59, 130, 246, 0.15)',
+      color: '#3b82f6',
+      border: '1px solid #3b82f6',
+      icon: CheckCircle2
+    };
+  };
+
+  const getStoreBadge = (store: StoreName | string) => {
+    const s = String(store || '').toLowerCase();
+    if (s === 'amazon') return { label: 'AMAZON', bg: '#ff9900', color: '#000' };
+    if (s === 'flipkart') return { label: 'FLIPKART', bg: '#2874f0', color: '#fff' };
+    if (s === 'meesho') return { label: 'MEESHO', bg: '#f43397', color: '#fff' };
+    return { label: 'VOICECART', bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff' };
+  };
+
+  return (
+    <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '60px' }}>
+      {/* Top Header Section */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          marginBottom: '24px'
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px', margin: 0 }}>
+              My Orders
+            </h2>
+            {!isLoading && (
+              <span
+                style={{
+                  background: 'var(--bg-pill)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--primary)',
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700
+                }}
+              >
+                {totalCount} {totalCount === 1 ? 'order' : 'orders'}
+              </span>
+            )}
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', marginTop: '4px' }}>
+            View live status, multi-store price comparisons, download PDF invoices, or add orders from Amazon/Flipkart
+          </p>
+        </div>
+
+        {/* Add External Order Action */}
+        <button
+          onClick={() => setShowAddModal(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
+            border: 'none',
+            color: '#fff',
+            padding: '10px 18px',
+            borderRadius: '12px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 15px var(--primary-glow)'
+          }}
+        >
+          <Plus size={16} />
+          <span>Add Order from Amazon / Flipkart / Meesho</span>
+        </button>
+      </div>
+
+      {/* STATUS TABS */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          borderBottom: '1px solid var(--border-color)',
+          paddingBottom: '12px',
+          marginBottom: '20px',
+          overflowX: 'auto'
+        }}
+      >
+        {[
+          { id: 'all', label: 'All Orders' },
+          { id: 'in_progress', label: 'In Progress' },
+          { id: 'delivered', label: 'Delivered' },
+          { id: 'cancelled', label: 'Cancelled' }
+        ].map((tab) => {
+          const isActive = activeStatusTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveStatusTab(tab.id as any);
+                setCurrentPage(1);
+              }}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '10px',
+                border: isActive ? '1px solid var(--primary)' : '1px solid transparent',
+                background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                fontWeight: isActive ? 700 : 500,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* FILTER & SEARCH BAR */}
+      <div
+        className="glass-panel"
+        style={{
+          padding: '16px',
+          marginBottom: '24px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '12px'
+        }}
+      >
+        {/* Search input */}
+        <div style={{ position: 'relative', flex: '1 1 260px' }}>
+          <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+          <input
+            type="text"
+            placeholder="Search by product name, brand, or order ID..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="glass-input"
+            style={{ width: '100%', paddingLeft: '36px', fontSize: '0.85rem' }}
+          />
+        </div>
+
+        {/* Store filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Store size={15} color="var(--text-muted)" />
+          <select
+            value={selectedStore}
+            onChange={(e) => {
+              setSelectedStore(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="glass-input"
+            style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
+          >
+            <option value="all">All Stores</option>
+            <option value="amazon">Amazon India</option>
+            <option value="flipkart">Flipkart</option>
+            <option value="meesho">Meesho</option>
+            <option value="voicecart">VoiceCart Store</option>
+          </select>
+        </div>
+
+        {/* Date Range filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Calendar size={15} color="var(--text-muted)" />
+          <select
+            value={dateRange}
+            onChange={(e) => {
+              setDateRange(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="glass-input"
+            style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
+          >
+            <option value="all">All Time</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="6m">Last 6 Months</option>
+            <option value="2026">Year 2026</option>
+            <option value="2025">Year 2025</option>
+          </select>
+        </div>
+
+        {/* Sort filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <ArrowUpDown size={15} color="var(--text-muted)" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="glass-input"
+            style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+          </select>
+        </div>
+      </div>
+
+      {/* ERROR BANNER */}
+      {errorMessage && (
+        <div
+          style={{
+            padding: '14px 18px',
+            borderRadius: '12px',
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid #ef4444',
+            color: '#ef4444',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+        >
+          <span>{errorMessage}</span>
+          <button
+            onClick={fetchOrders}
+            style={{ background: 'transparent', border: 'none', color: '#ef4444', fontWeight: 700, cursor: 'pointer' }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* SKELETON LOADER */}
+      {isLoading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="glass-panel"
+              style={{
+                padding: '20px',
+                height: '140px',
+                animation: 'pulse 1.5s infinite ease-in-out',
+                background: 'var(--bg-subtle)'
+              }}
+            />
+          ))}
+        </div>
+      ) : orders.length === 0 ? (
+        /* EMPTY STATE */
+        <div
+          className="glass-panel"
+          style={{
+            padding: '60px 24px',
+            textAlign: 'center',
+            background: 'var(--bg-card)'
+          }}
+        >
+          <div
+            style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '50%',
+              background: 'rgba(99, 102, 241, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px'
+            }}
+          >
+            <ShoppingBag size={34} color="var(--primary)" />
+          </div>
+          <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px' }}>
+            No orders found
+          </h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', maxWidth: '420px', margin: '0 auto 24px', lineHeight: 1.5 }}>
+            {searchQuery || activeStatusTab !== 'all' || selectedStore !== 'all'
+              ? 'No orders match your selected filters. Try clearing or relaxing your search query.'
+              : 'You have not placed any orders yet. Speak your wish to compare live items across Amazon, Flipkart, and Meesho.'}
+          </p>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <button
+              onClick={() => onNavigateRoute('/')}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
+                border: 'none',
+                color: '#fff',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px var(--primary-glow)'
+              }}
+            >
+              Start Shopping
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                padding: '12px 20px',
+                borderRadius: '10px',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-main)',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Paste Amazon / Flipkart SMS
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* ORDERS LIST CARDS */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {orders.map((order) => {
+            const statusBadge = getStatusBadge(order.status);
+            const storeBadge = getStoreBadge(order.store);
+            const StatusIcon = statusBadge.icon;
+            const items = order.orderItems || order.items || [];
+            const firstItem = items[0];
+            const extraItemsCount = items.length > 1 ? items.length - 1 : 0;
+            const isCopied = copiedOrderId === order.orderId;
+            const isReordering = reorderingId === order.orderId;
+
+            const formattedDate = new Date(order.orderedAt).toLocaleString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            return (
+              <div
+                key={order.id}
+                className="glass-panel"
+                style={{
+                  padding: '20px',
+                  transition: 'all 0.2s ease',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-card)'
+                }}
+              >
+                {/* CARD TOP ROW: STORE, ORDER ID, DATE, STATUS BADGE */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    paddingBottom: '14px',
+                    marginBottom: '16px'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+                    {/* Store Badge */}
+                    <span
+                      style={{
+                        background: storeBadge.bg,
+                        color: storeBadge.color,
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        letterSpacing: '0.5px'
+                      }}
+                    >
+                      {storeBadge.label}
+                    </span>
+
+                    {/* Order ID with Copy button */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        #{order.orderId}
+                      </span>
+                      <button
+                        onClick={(e) => handleCopy(order.orderId, e)}
+                        title="Copy Order ID"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: isCopied ? 'var(--accent-green)' : 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '2px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        {isCopied ? <Check size={14} color="var(--accent-green)" /> : <Copy size={14} />}
+                      </button>
+                    </div>
+
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>•</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      Placed on {formattedDate}
+                    </span>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: statusBadge.bg,
+                      color: statusBadge.color,
+                      border: statusBadge.border,
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '0.78rem',
+                      fontWeight: 700
+                    }}
+                  >
+                    <StatusIcon size={14} />
+                    <span>{statusBadge.label}</span>
+                  </div>
+                </div>
+
+                {/* CARD BODY ROW: IMAGE, TITLES, PRICE, DELIVERY */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 1fr) auto',
+                    gap: '16px',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center', minWidth: 0 }}>
+                    {/* Thumbnail with +N more items label */}
+                    <div style={{ position: 'relative', flexShrink: 0, width: '72px', height: '72px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)', background: '#fff' }}>
+                      <ProductImage
+                        src={order.productImage || (firstItem as any)?.imageUrl || (firstItem as any)?.product?.imageUrl}
+                        alt={order.productTitle || 'Ordered Product'}
+                        store={order.store}
+                        productId={(firstItem as any)?.productId || (firstItem as any)?.product?.productId || order.orderId}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                      {extraItemsCount > 0 && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            bottom: '-4px',
+                            right: '-4px',
+                            background: 'var(--primary)',
+                            color: '#fff',
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            padding: '2px 6px',
+                            borderRadius: '10px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+                          }}
+                        >
+                          +{extraItemsCount} more
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Titles and Metadata */}
+                    <div style={{ minWidth: 0 }}>
+                      <h4
+                        onClick={() => onNavigateRoute(`/orders/${order.orderId}`)}
+                        style={{
+                          fontSize: '0.98rem',
+                          fontWeight: 700,
+                          color: 'var(--text-main)',
+                          marginBottom: '4px',
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {order.productTitle}
+                      </h4>
+
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        <span>
+                          Payment: <strong style={{ color: 'var(--text-secondary)' }}>{order.paymentDetails?.method || order.paymentMethod || 'Instant Gateway'}</strong>
+                        </span>
+                        <span>•</span>
+                        <span>
+                          Expected Delivery: <strong style={{ color: 'var(--accent-green)' }}>{order.estimatedDeliveryDate || '2-3 Business Days'}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Price Column */}
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                      ₹{order.totalAmount.toLocaleString()}
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--accent-green)', fontWeight: 600 }}>
+                      Free Delivery
+                    </span>
+                  </div>
+                </div>
+
+                {/* CARD ACTIONS ROW */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: '10px',
+                    marginTop: '16px',
+                    paddingTop: '14px',
+                    borderTop: '1px solid var(--border-subtle)'
+                  }}
+                >
+                  {/* Reorder Button */}
+                  <button
+                    onClick={(e) => handleReorder(order, e)}
+                    disabled={isReordering}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'var(--bg-subtle)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-main)',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: isReordering ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <RotateCcw size={14} className={isReordering ? 'mic-active-pulse' : ''} />
+                    <span>{isReordering ? 'Adding...' : 'Reorder'}</span>
+                  </button>
+
+                  {/* Track Order Button */}
+                  {order.isExternal ? (
+                    <a
+                      href={order.trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'rgba(99, 102, 241, 0.15)',
+                        border: '1px solid var(--primary)',
+                        color: 'var(--primary)',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        textDecoration: 'none'
+                      }}
+                    >
+                      <Truck size={14} />
+                      <span>Track on {order.store.toUpperCase()}</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => onNavigateRoute(`/orders/${order.orderId}`)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'rgba(99, 102, 241, 0.15)',
+                        border: '1px solid var(--primary)',
+                        color: 'var(--primary)',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Truck size={14} />
+                      <span>Track Order</span>
+                    </button>
+                  )}
+
+                  {/* View Details Button */}
+                  <button
+                    onClick={() => onNavigateRoute(`/orders/${order.orderId}`)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 10px var(--primary-glow)'
+                    }}
+                  >
+                    <span>View Details</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* PAGINATION CONTROLS */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginTop: '20px' }}>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-color)',
+                  color: currentPage === 1 ? 'var(--text-dim)' : 'var(--text-main)',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <ChevronLeft size={14} /> Previous
+              </button>
+
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
+              </span>
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-color)',
+                  color: currentPage === totalPages ? 'var(--text-dim)' : 'var(--text-main)',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                Next <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add External Order Modal */}
+      {showAddModal && (
+        <AddExternalOrderModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onOrderAdded={(newOrder) => {
+            setOrders((prev) => [newOrder, ...prev]);
+            setTotalCount((c) => c + 1);
+            if (showToast) showToast('External order tracked successfully!');
+          }}
+        />
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,1799 @@
+{
+  "totalInspected": 100,
+  "reasonCounts": {
+    "no_url_in_record": 0,
+    "rejected_by_validator": 0,
+    "http_error": 57,
+    "hotlink_blocked": 0,
+    "expired_or_signed_url": 0,
+    "timeout": 8,
+    "wrong_product": 25,
+    "duplicate_image": 0,
+    "variant_mismatch": 0,
+    "cache_collision": 0,
+    "valid_unique": 10
+  },
+  "storeBreakdown": {
+    "amazon": {
+      "valid_unique": 6,
+      "http_error": 19,
+      "wrong_product": 1
+    },
+    "flipkart": {
+      "valid_unique": 4,
+      "http_error": 16,
+      "timeout": 4,
+      "wrong_product": 3
+    },
+    "meesho": {
+      "http_error": 22,
+      "timeout": 4
+    },
+    "voicecart": {
+      "wrong_product": 21
+    }
+  },
+  "categoryBreakdown": {
+    "all": {
+      "valid_unique": 4,
+      "http_error": 5
+    },
+    "mobiles": {
+      "http_error": 5,
+      "valid_unique": 2
+    },
+    "electronics": {
+      "valid_unique": 4,
+      "http_error": 7,
+      "timeout": 1
+    },
+    "fashion": {
+      "http_error": 9
+    },
+    "footwear": {
+      "http_error": 9
+    },
+    "beauty": {
+      "http_error": 9
+    },
+    "home": {
+      "http_error": 8,
+      "timeout": 1
+    },
+    "appliances": {
+      "http_error": 5,
+      "timeout": 6
+    },
+    "iphone 15": {
+      "wrong_product": 1
+    },
+    "wireless earbuds boat": {
+      "wrong_product": 2
+    },
+    "samsung smart tv": {
+      "wrong_product": 1
+    },
+    "past_orders": {
+      "wrong_product": 21
+    }
+  },
+  "validatorRejections": {
+    "size_under_400": 0,
+    "non_cdn_domain": 0,
+    "stock_unsplash": 25,
+    "missing_protocol": 0
+  },
+  "items": [
+    {
+      "index": 1,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "amazon",
+      "productId": "amz_apple_iphone_15_128gb_black",
+      "title": "Apple iPhone 15 (128 GB) - Black",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71d7rfSl0wL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71d7rfSl0wL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71d7rfSl0wL._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 2,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "amazon",
+      "productId": "amz_boat_airdopes_141_black",
+      "title": "boAt Airdopes 141 Bluetooth Truly Wireless in Ear Earbuds with 42H Playtime, Beast Mode (Bold Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51HBom8xz7L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51HBom8xz7L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51HBom8xz7L._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 3,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "amazon",
+      "productId": "amz_samsung_43_inch_crystal_4k_smart_tv",
+      "title": "Samsung 108 cm (43 inches) Crystal 4K Vivid Pro Ultra HD Smart LED TV (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71RXCZu630L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71RXCZu630L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71RXCZu630L._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 4,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "flipkart",
+      "productId": "fk_oppo_k14x_5g_icy_blue_64gb",
+      "title": "OPPO K14x 5G (Icy Blue, 64 GB) (4 GB RAM)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/81Os1SDWpcL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/81Os1SDWpcL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/81Os1SDWpcL._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 5,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "flipkart",
+      "productId": "fk_noise_colorfit_pulse_3_smartwatch",
+      "title": "Noise ColorFit Pulse 3 with 1.96\" TFT Display, Bluetooth Calling Smartwatch (Jet Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61SSVxTSs3L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61SSVxTSs3L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61SSVxTSs3L._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 6,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "flipkart",
+      "productId": "fk_levis_mens_slim_fit_jeans_blue",
+      "title": "Levi's Men's 511 Slim Fit Low Rise Stretchable Jeans (Dark Indigo)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/81vYk7L+N-L._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/81vYk7L+N-L._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/81vYk7L+N-L._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 7,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "meesho",
+      "productId": "meesho_realme_p4r_5g_speed_blue",
+      "title": "realme P4R 5G (Speed Blue, 128 GB Storage, 6 GB RAM) Smartphone with 50MP AI Camera",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71Ge91v64BL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71Ge91v64BL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71Ge91v64BL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 8,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "meesho",
+      "productId": "meesho_livesmart_4_fold_umbrella",
+      "title": "Livesmart 4 Fold Automatic Windproof Rain & Sun Umbrella (Black with UV Silver Coating)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61w8tG24uOL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61w8tG24uOL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61w8tG24uOL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 9,
+      "section": "category",
+      "categoryOrQuery": "all",
+      "store": "meesho",
+      "productId": "meesho_m10_tws_wireless_earbuds",
+      "title": "M10 TWS Bluetooth Wireless Earbuds with LED Digital Display Power Bank Case (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51NqFhBvHwL._SL1100_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51NqFhBvHwL._SL1100_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51NqFhBvHwL._SL1100_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 10,
+      "section": "category",
+      "categoryOrQuery": "mobiles",
+      "store": "amazon",
+      "productId": "amz_samsung_galaxy_m35_5g_blue",
+      "title": "Samsung Galaxy M35 5G (Moonlight Blue, 6GB RAM, 128GB Storage) | 6000mAh Battery | 120Hz Super AMOLED Display",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/81x594W6nBL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/81x594W6nBL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/81x594W6nBL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 11,
+      "section": "category",
+      "categoryOrQuery": "mobiles",
+      "store": "amazon",
+      "productId": "amz_oneplus_nord_ce4_5g_dark_chrome",
+      "title": "OnePlus Nord CE4 (Dark Chrome, 8GB RAM, 128GB Storage) | 100W SUPERVOOC Fast Charge | Snapdragon 7 Gen 3",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61abLrCfF7L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61abLrCfF7L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61abLrCfF7L._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 12,
+      "section": "category",
+      "categoryOrQuery": "mobiles",
+      "store": "flipkart",
+      "productId": "fk_realme_12_plus_5g_pioneer_green",
+      "title": "realme 12+ 5G (Pioneer Green, 128 GB) (8 GB RAM) | 50MP Sony LYT-600 OIS Camera",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71V--WZVUIL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71V--WZVUIL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71V--WZVUIL._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 13,
+      "section": "category",
+      "categoryOrQuery": "mobiles",
+      "store": "flipkart",
+      "productId": "fk_motorola_edge_50_fusion_marshmallow",
+      "title": "Motorola Edge 50 Fusion (Marshmallow Blue, 128 GB) (8 GB RAM) | 144Hz 3D Curved pOLED Display",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/712y2Vl2aVL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/712y2Vl2aVL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/712y2Vl2aVL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 14,
+      "section": "category",
+      "categoryOrQuery": "mobiles",
+      "store": "meesho",
+      "productId": "meesho_oppo_k14x_5g_icy_blue_64gb",
+      "title": "OPPO K14x 5G (Icy Blue, 64 GB Storage, 4 GB RAM) Smartphone with 50MP Camera",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/81wOuL90g+L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/81wOuL90g+L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/81wOuL90g+L._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 15,
+      "section": "category",
+      "categoryOrQuery": "mobiles",
+      "store": "meesho",
+      "productId": "meesho_redmi_13c_5g_startrail_black",
+      "title": "Redmi 13C 5G (Startrail Black, 128 GB Storage, 4 GB RAM) | 50MP AI Dual Camera",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71c8lB4Q1EL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71c8lB4Q1EL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71c8lB4Q1EL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 16,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "amazon",
+      "productId": "amz_sony_wh1000xm4_anc_headphones_black",
+      "title": "Sony WH-1000XM4 Wireless Industry Leading Active Noise Cancelling Overhead Headphones with Mic, 30H Playtime (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51SKmu2G9FL._SL1200_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51SKmu2G9FL._SL1200_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51SKmu2G9FL._SL1200_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 17,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "amazon",
+      "productId": "amz_mi_20000mah_power_bank_3i",
+      "title": "Xiaomi 20000mAh Power Bank 3i with 18W Fast Charging, Triple Port Output, Dual Input (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71lVwl3q-kL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71lVwl3q-kL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71lVwl3q-kL._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 18,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "amazon",
+      "productId": "amz_apple_ipad_10th_gen_blue_64gb",
+      "title": "Apple iPad (10th Generation): with A14 Bionic chip, 10.9-inch Liquid Retina Display, 64GB, Wi-Fi 6 (Blue)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61uA2UVnYWL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61uA2UVnYWL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61uA2UVnYWL._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 19,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "flipkart",
+      "productId": "fk_boat_stone_352_bluetooth_speaker_blue",
+      "title": "boAt Stone 352 10W Portable Bluetooth Speaker with Dynamic Sound, IPX7 Water Resistance (Raging Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61kWB+bVLLL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61kWB+bVLLL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61kWB+bVLLL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 20,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "flipkart",
+      "productId": "fk_realme_10000mah_30w_dart_power_bank",
+      "title": "realme 10000 mAh 30W Dart Charge Power Bank (Yellow, Two-way Fast Charging)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61lV2q7ZzGL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61lV2q7ZzGL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61lV2q7ZzGL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 21,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "flipkart",
+      "productId": "fk_samsung_galaxy_tab_a9_plus_wifi",
+      "title": "Samsung Galaxy Tab A9+ (11.0 inch, 64 GB Storage, 4 GB RAM, Wi-Fi Only) (Graphite)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71k4v7GvIcL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71k4v7GvIcL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71k4v7GvIcL._SL1500_.jpg",
+      "failureReason": "timeout",
+      "failureDetail": "Image host timed out after 5000ms: https://m.media-amazon.com/images/I/71k4v7GvIcL._SL1500_.jpg",
+      "httpStatus": "TIMEOUT"
+    },
+    {
+      "index": 22,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "meesho",
+      "productId": "meesho_wireless_bluetooth_karaoke_mic_speaker",
+      "title": "WS-858 Wireless Bluetooth Handheld Karaoke Microphone with Inbuilt Speaker & Voice Changer (Rose Gold)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61j1r7-z7lL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61j1r7-z7lL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61j1r7-z7lL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 23,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "meesho",
+      "productId": "meesho_mini_portable_thermal_receipt_photo_printer",
+      "title": "Mini Portable Wireless Bluetooth Thermal Pocket Sticker & Receipt Photo Printer with Paper Rolls (Pink)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51o+y31+VTL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51o+y31+VTL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51o+y31+VTL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 24,
+      "section": "category",
+      "categoryOrQuery": "electronics",
+      "store": "meesho",
+      "productId": "meesho_rgb_sound_reactive_led_music_light_bar",
+      "title": "RGB Sound Reactive 32-Bit Voice Activated LED Music Rhythm Ambient Light Bar with App Control (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61Z7eG-y8+L._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61Z7eG-y8+L._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61Z7eG-y8+L._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 25,
+      "section": "category",
+      "categoryOrQuery": "fashion",
+      "store": "amazon",
+      "productId": "amz_symbol_mens_cotton_shirt",
+      "title": "Amazon Brand - Symbol Men's Regular Fit Cotton Formal Shirt (Light Blue)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71-6C3WvU1L._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71-6C3WvU1L._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71-6C3WvU1L._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 26,
+      "section": "category",
+      "categoryOrQuery": "fashion",
+      "store": "amazon",
+      "productId": "amz_allen_solly_mens_polo_tshirt_navy",
+      "title": "Allen Solly Men's Regular Fit Solid Polo T-Shirt (Navy Blue)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61NvhV514XL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61NvhV514XL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61NvhV514XL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 27,
+      "section": "category",
+      "categoryOrQuery": "fashion",
+      "store": "amazon",
+      "productId": "amz_us_polo_mens_slim_fit_casual_shirt",
+      "title": "U.S. POLO ASSN. Men's Slim Fit Cotton Checked Casual Shirt (White & Olive Green)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71xNqX3f5IL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71xNqX3f5IL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71xNqX3f5IL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 28,
+      "section": "category",
+      "categoryOrQuery": "fashion",
+      "store": "flipkart",
+      "productId": "fk_peter_england_mens_slim_casual_shirt_maroon",
+      "title": "Peter England Men's Slim Fit Full Sleeve Casual Cotton Shirt (Maroon)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71P4U7N1kEL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71P4U7N1kEL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71P4U7N1kEL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 29,
+      "section": "category",
+      "categoryOrQuery": "fashion",
+      "store": "flipkart",
+      "productId": "fk_highlander_mens_slim_fit_chinos_beige",
+      "title": "HIGHLANDER Men's Slim Fit Cotton Stretchable Casual Chino Trousers (Beige)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71g6NqXvYkL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71g6NqXvYkL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71g6NqXvYkL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 30,
+      "section": "category",
+      "categoryOrQuery": "fashion",
+      "store": "meesho",
+      "productId": "meesho_womens_cotton_anarkali_kurti_set",
+      "title": "Women's Pure Cotton Printed Anarkali Kurti with Pant & Dupatta Set (Sky Blue)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/81hOqT4B37L._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/81hOqT4B37L._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/81hOqT4B37L._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 31,
+      "section": "category",
+      "categoryOrQuery": "fashion",
+      "store": "meesho",
+      "productId": "meesho_mens_oversized_cotton_graphic_tshirt_black",
+      "title": "Men's Oversized Fit 100% Pure Cotton Typography Graphic Streetwear T-Shirt (Matte Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/6125yA88eHL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/6125yA88eHL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/6125yA88eHL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 32,
+      "section": "category",
+      "categoryOrQuery": "fashion",
+      "store": "meesho",
+      "productId": "meesho_bollywood_georgette_designer_saree",
+      "title": "Bollywood Style Pure Georgette Sequence Embroidery Work Designer Saree with Unstitched Blouse Piece (Wine Red)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/81dGqT4eW3L._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/81dGqT4eW3L._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/81dGqT4eW3L._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 33,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "amazon",
+      "productId": "amz_puma_softride_pro_shoes_black",
+      "title": "Puma Men's Softride Pro Walking & Running Shoes (Black-White)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61+y5w9w2tL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61+y5w9w2tL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61+y5w9w2tL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 34,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "amazon",
+      "productId": "amz_nike_revolution_7_running_shoes_black",
+      "title": "Nike Men's Revolution 7 Road Running & Jogging Shoes (Black/White, UK 8)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71d1V1p-oBL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71d1V1p-oBL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71d1V1p-oBL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 35,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "amazon",
+      "productId": "amz_red_tape_mens_sneaker_walking_shoes_white",
+      "title": "Red Tape Men's Classic Casual Sneaker Shoes for Walking & College Wear (White/Grey)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61uK7G3j9KL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61uK7G3j9KL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61uK7G3j9KL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 36,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "flipkart",
+      "productId": "fk_sparx_mens_running_shoes_navy",
+      "title": "Sparx Men's Lightweight Mesh Walking & Running Sports Shoes (Navy Blue-Orange)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71W8c9gQnEL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71W8c9gQnEL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71W8c9gQnEL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 37,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "flipkart",
+      "productId": "fk_asian_wonder_13_running_shoes_grey",
+      "title": "Asian Men's Wonder-13 Lightweight Mesh Sports Running & Walking Shoes (Grey-Firozi)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61b7L4B6zOL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61b7L4B6zOL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61b7L4B6zOL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 38,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "flipkart",
+      "productId": "fk_campus_first_running_shoes_black",
+      "title": "Campus Men's FIRST Running & Gym Training Shoes with Springy Foam (Black-Red)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61q24N49yYL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61q24N49yYL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61q24N49yYL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 39,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "meesho",
+      "productId": "meesho_mens_trendy_chunky_white_sneakers",
+      "title": "Men's Trendy Chunky White Streetwear Casual Sneakers with Cushion Soles (White)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61dC481+yKL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61dC481+yKL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61dC481+yKL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 40,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "meesho",
+      "productId": "meesho_lightweight_mesh_gym_running_shoes_black",
+      "title": "Men's Ultra-Lightweight Breathable Mesh Gym & Morning Walk Sports Shoes (All Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61fK2R56tEL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61fK2R56tEL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61fK2R56tEL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 41,
+      "section": "category",
+      "categoryOrQuery": "footwear",
+      "store": "meesho",
+      "productId": "meesho_classic_mens_leatherette_driving_loafers",
+      "title": "Men's Classic Slip-On Driving Loafers Casual Moccasin Shoes (Tan Brown)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71Gq5N43eLL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71Gq5N43eLL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71Gq5N43eLL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 42,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "amazon",
+      "productId": "amz_minimalist_2pct_salicylic_acid_serum",
+      "title": "Minimalist 2% Salicylic Acid Face Serum for Acne, Blackheads & Open Pores with Oligopeptide (30 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61u9o1mDqHL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61u9o1mDqHL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61u9o1mDqHL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 43,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "amazon",
+      "productId": "amz_cetaphil_gentle_skin_cleanser_250ml",
+      "title": "Cetaphil Gentle Skin Cleanser for Dry to Normal, Sensitive Skin with Niacinamide & Vitamin B5 (250 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51rP0i12LcL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51rP0i12LcL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51rP0i12LcL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 44,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "amazon",
+      "productId": "amz_mamaearth_onion_hair_oil_250ml",
+      "title": "Mamaearth Onion Hair Oil for Hair Fall Control with Redensyl & Almond Oil (250 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61jC+kZkIOL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61jC+kZkIOL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61jC+kZkIOL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 45,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "flipkart",
+      "productId": "fk_plum_green_tea_oil_free_moisturizer",
+      "title": "Plum Green Tea Oil-Free Moisturizer with Niacinamide & Hyaluronic Acid (50 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51a3hXq1QHL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51a3hXq1QHL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51a3hXq1QHL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 46,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "flipkart",
+      "productId": "fk_biotique_morning_nectar_lotion_190ml",
+      "title": "Biotique Morning Nectar Flawless Skin Nourish & Hydrate Moisturizer Face Lotion (190 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61R48kG1cOL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61R48kG1cOL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61R48kG1cOL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 47,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "flipkart",
+      "productId": "fk_maybelline_superstay_matte_ink_liquid_lipstick",
+      "title": "Maybelline New York Super Stay Matte Ink Liquid Lipstick (Seductress, 5 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51o7b4K2aVL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51o7b4K2aVL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51o7b4K2aVL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 48,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "meesho",
+      "productId": "meesho_12_shade_matte_nude_lipstick_set",
+      "title": "12-Shade Waterproof Long Lasting Matte Liquid Lipstick Set for Girls & Women (Combo Pack)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61e-U7y01BL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61e-U7y01BL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61e-U7y01BL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 49,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "meesho",
+      "productId": "meesho_vitamin_c_face_serum_with_hyaluronic_acid",
+      "title": "Vitamin C 20% Glowing Face Serum with Hyaluronic Acid for Dark Spot Removal & Skin Brightening (30 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51z548P1bTL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51z548P1bTL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51z548P1bTL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 50,
+      "section": "category",
+      "categoryOrQuery": "beauty",
+      "store": "meesho",
+      "productId": "meesho_organic_rose_water_facial_mist_200ml",
+      "title": "Pure Organic Gulab Jal / Rose Water Facial Toner & Makeup Setting Mist Spray (200 ml Pack of 2)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/51e3Fq88yAL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/51e3Fq88yAL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/51e3Fq88yAL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 51,
+      "section": "category",
+      "categoryOrQuery": "home",
+      "store": "amazon",
+      "productId": "amz_livesmart_4_fold_umbrella_black",
+      "title": "Livesmart 4 Fold Windproof Automatic Open and Close Rain Umbrella (UV Coated, Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61mZzS47XoL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61mZzS47XoL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61mZzS47XoL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 52,
+      "section": "category",
+      "categoryOrQuery": "home",
+      "store": "amazon",
+      "productId": "amz_solimo_microfibre_reversible_comforter",
+      "title": "Amazon Brand - Solimo Microfibre Reversible All-Season Double Comforter (Navy Blue & Grey, 200 GSM)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/81Wb2iQ4aKL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/81Wb2iQ4aKL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/81Wb2iQ4aKL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 53,
+      "section": "category",
+      "categoryOrQuery": "home",
+      "store": "flipkart",
+      "productId": "fk_story_at_home_blackout_curtains_set_of_2",
+      "title": "Story@Home 100% Blackout Solid Door Curtains (Set of 2, 7 Feet, Dark Grey)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71wL1X-gJYL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71wL1X-gJYL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71wL1X-gJYL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 54,
+      "section": "category",
+      "categoryOrQuery": "home",
+      "store": "flipkart",
+      "productId": "fk_wakefit_sleeping_pillows_set_of_2",
+      "title": "Wakefit Hollow Fiber Sleeping Pillows (Set of 2, White & Grey Border, Standard Size)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61rR38p6yLL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61rR38p6yLL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61rR38p6yLL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 55,
+      "section": "category",
+      "categoryOrQuery": "home",
+      "store": "flipkart",
+      "productId": "fk_pigeon_handy_mini_chopper_350ml",
+      "title": "Pigeon Polypropylene Handy Mini Plastic Chopper with 3 Stainless Steel Blades (Green, 350 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71D0b2r1u7L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71D0b2r1u7L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71D0b2r1u7L._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 56,
+      "section": "category",
+      "categoryOrQuery": "home",
+      "store": "meesho",
+      "productId": "meesho_floral_glace_cotton_fitted_bedsheet",
+      "title": "All Around Elastic Fitted Pure Glace Cotton Double Bedsheet with 2 Pillow Covers (Navy Blue Floral)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71oO84P1yTL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71oO84P1yTL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71oO84P1yTL._SL1500_.jpg",
+      "failureReason": "timeout",
+      "failureDetail": "Image host timed out after 5000ms: https://m.media-amazon.com/images/I/71oO84P1yTL._SL1500_.jpg",
+      "httpStatus": "TIMEOUT"
+    },
+    {
+      "index": 57,
+      "section": "category",
+      "categoryOrQuery": "home",
+      "store": "meesho",
+      "productId": "meesho_3tier_kitchen_modular_storage_trolley",
+      "title": "3-Tier Multi-Purpose Modular Kitchen Vegetable & Fruit Storage Trolley Cart with Wheels (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61v-v+5vFPL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61v-v+5vFPL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61v-v+5vFPL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 58,
+      "section": "category",
+      "categoryOrQuery": "appliances",
+      "store": "amazon",
+      "productId": "amz_philips_air_fryer_hd9200",
+      "title": "Philips Daily Collection 4.1L Rapid Air Technology Digital Air Fryer HD9200 (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61P4c7bK8DL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61P4c7bK8DL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61P4c7bK8DL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 59,
+      "section": "category",
+      "categoryOrQuery": "appliances",
+      "store": "amazon",
+      "productId": "amz_bajaj_rex_500w_mixer_grinder",
+      "title": "Bajaj Rex 500W Mixer Grinder with Nutri-Pro Feature and 3 Stainless Steel Jars (White)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71y684G1ePL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71y684G1ePL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71y684G1ePL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 60,
+      "section": "category",
+      "categoryOrQuery": "appliances",
+      "store": "flipkart",
+      "productId": "fk_lg_7kg_5star_washing_machine",
+      "title": "LG 7.0 Kg 5 Star Smart Inverter Fully-Automatic Top Load Washing Machine (Silver)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71m4+7xP-TL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71m4+7xP-TL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71m4+7xP-TL._SL1500_.jpg",
+      "failureReason": "timeout",
+      "failureDetail": "Image host timed out after 5000ms: https://m.media-amazon.com/images/I/71m4+7xP-TL._SL1500_.jpg",
+      "httpStatus": "TIMEOUT"
+    },
+    {
+      "index": 61,
+      "section": "category",
+      "categoryOrQuery": "appliances",
+      "store": "flipkart",
+      "productId": "fk_godrej_180l_4star_refrigerator_wine",
+      "title": "Godrej 180 L 4 Star Advanced Inverter Direct Cool Single Door Refrigerator (Wine Red Lily)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61V1h4-s2+L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61V1h4-s2+L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61V1h4-s2+L._SL1500_.jpg",
+      "failureReason": "timeout",
+      "failureDetail": "Image host timed out after 5000ms: https://m.media-amazon.com/images/I/61V1h4-s2+L._SL1500_.jpg",
+      "httpStatus": "TIMEOUT"
+    },
+    {
+      "index": 62,
+      "section": "category",
+      "categoryOrQuery": "appliances",
+      "store": "flipkart",
+      "productId": "fk_prestige_iris_750w_mixer_grinder",
+      "title": "Prestige IRIS 750 Watt Mixer Grinder with 3 Stainless Steel Jars + 1 Juicer Jar (White and Blue)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71fL9Wz7Z2L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71fL9Wz7Z2L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71fL9Wz7Z2L._SL1500_.jpg",
+      "failureReason": "timeout",
+      "failureDetail": "Image host timed out after 5000ms: https://m.media-amazon.com/images/I/71fL9Wz7Z2L._SL1500_.jpg",
+      "httpStatus": "TIMEOUT"
+    },
+    {
+      "index": 63,
+      "section": "category",
+      "categoryOrQuery": "appliances",
+      "store": "meesho",
+      "productId": "meesho_portable_single_stove_electric_hot_plate",
+      "title": "Heavy Duty 1000W Electric Cooking Stove Coil Hot Plate with Adjustable Temperature Knob (White)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61t78N24ePL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61t78N24ePL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61t78N24ePL._SL1000_.jpg",
+      "failureReason": "timeout",
+      "failureDetail": "Image host timed out after 5000ms: https://m.media-amazon.com/images/I/61t78N24ePL._SL1000_.jpg",
+      "httpStatus": "TIMEOUT"
+    },
+    {
+      "index": 64,
+      "section": "category",
+      "categoryOrQuery": "appliances",
+      "store": "meesho",
+      "productId": "meesho_handheld_garment_steamer_clothes_iron",
+      "title": "Portable Handheld Garment Steamer 1000W Fast Heating Vertical Wrinkle Remover Iron (Pastel Green)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61g6Yq4ZzEL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61g6Yq4ZzEL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61g6Yq4ZzEL._SL1000_.jpg",
+      "failureReason": "timeout",
+      "failureDetail": "Image host timed out after 5000ms: https://m.media-amazon.com/images/I/61g6Yq4ZzEL._SL1000_.jpg",
+      "httpStatus": "TIMEOUT"
+    },
+    {
+      "index": 65,
+      "section": "category",
+      "categoryOrQuery": "appliances",
+      "store": "meesho",
+      "productId": "meesho_electric_egg_boiler_poacher_7eggs",
+      "title": "Automatic Electric Egg Boiler and Poacher 350W with Auto Off (Cooks 7 Eggs in 10 Mins, Yellow)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61t7q4Yy2TL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61t7q4Yy2TL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61t7q4Yy2TL._SL1000_.jpg",
+      "failureReason": "timeout",
+      "failureDetail": "Image host timed out after 5000ms: https://m.media-amazon.com/images/I/61t7q4Yy2TL._SL1000_.jpg",
+      "httpStatus": "TIMEOUT"
+    },
+    {
+      "index": 66,
+      "section": "search",
+      "categoryOrQuery": "iphone 15",
+      "store": "flipkart",
+      "productId": "fk_apple_iphone_15_128gb_black",
+      "title": "Apple iPhone 15 (Black, 128 GB)",
+      "rawImageSources": {
+        "images": [
+          "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80"
+        ],
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 67,
+      "section": "search",
+      "categoryOrQuery": "wireless earbuds boat",
+      "store": "amazon",
+      "productId": "amz_boat_airdopes_141_anc",
+      "title": "boAt Airdopes 141 ANC TWS Earbuds with 32 dB Active Noise Cancellation, 42H Playtime (Gunmetal Black)",
+      "rawImageSources": {
+        "images": [
+          "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80"
+        ],
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 68,
+      "section": "search",
+      "categoryOrQuery": "wireless earbuds boat",
+      "store": "flipkart",
+      "productId": "fk_boat_airdopes_141_black",
+      "title": "boAt Airdopes 141 with 42 hrs Playtime, Beast Mode ENx Tech Bluetooth Headset (Bold Black, True Wireless)",
+      "rawImageSources": {
+        "images": [
+          "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80",
+          "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600&auto=format&fit=crop&q=80"
+        ],
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 69,
+      "section": "search",
+      "categoryOrQuery": "samsung smart tv",
+      "store": "flipkart",
+      "productId": "fk_samsung_43_inch_crystal_4k_smart_tv",
+      "title": "SAMSUNG Crystal 4K Vivid 108 cm (43 inch) Ultra HD (4K) LED Smart Tizen TV with PurColor",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=600&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 70,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791655972244",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 71,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791544464422",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 72,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791544317482",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 73,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791544163369",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 74,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791544086502",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 75,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791539273740",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 76,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791538511532",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 77,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791538437038",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 78,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791526771448",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 79,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791526695615",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 80,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791525449365",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 81,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791524852890",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 82,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791524803335",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 83,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791524721075",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 84,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791523162237",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 85,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791523100977",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 86,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791486569470",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 87,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791486476678",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 88,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791486141945",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 89,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791484333309",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 90,
+      "section": "orders",
+      "categoryOrQuery": "past_orders",
+      "store": "voicecart",
+      "productId": "order_DEMO_1791484291064",
+      "title": "VoiceCart SoundMax Pro",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80"
+      },
+      "chosenUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80",
+      "failureReason": "wrong_product",
+      "failureDetail": "Unsplash placeholder stock photo assigned to product"
+    },
+    {
+      "index": 91,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "appliances",
+      "store": "amazon",
+      "productId": "amz_kent_grand_ro_water_purifier",
+      "title": "KENT Grand RO Water Purifier | 8L Tank | RO + UV + UF + TDS Control | 20 L/hr Output (White)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61H4h5+XbGL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61H4h5+XbGL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61H4h5+XbGL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 92,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "appliances",
+      "store": "flipkart",
+      "productId": "fk_crompton_ozone_75l_desert_air_cooler",
+      "title": "Crompton Ozone 75 Litres Desert Air Cooler with Everlast Pump & High Density Honeycomb Pads (White & Teal)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61K5Q-2gVCL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61K5Q-2gVCL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61K5Q-2gVCL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 93,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "appliances",
+      "store": "meesho",
+      "productId": "meesho_usb_rechargeable_portable_juice_blender",
+      "title": "USB Rechargeable Portable Mini Electric Juicer & Smoothie Blender with 6 Sharp Blades (380 ml, Pink)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61w7sY2w2TL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61w7sY2w2TL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61w7sY2w2TL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 94,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "home",
+      "store": "amazon",
+      "productId": "amz_milton_thermosteel_duo_deluxe_1000ml",
+      "title": "Milton Thermosteel Duo Deluxe 1000 ml Vacuum Insulated Stainless Steel Water Bottle (Silver)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71U1Q1f1GTL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71U1Q1f1GTL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71U1Q1f1GTL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 95,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "home",
+      "store": "meesho",
+      "productId": "meesho_ultrasonic_aroma_diffuser_humidifier_led",
+      "title": "Ultrasonic Essential Oil Aromatherapy Diffuser & Air Humidifier with 7 Color Changing LED (Wood Grain, 300 ml)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61b7L4P2tEL._SL1000_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61b7L4P2tEL._SL1000_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61b7L4P2tEL._SL1000_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 96,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "fashion",
+      "store": "meesho",
+      "productId": "meesho_cotton_linen_casual_kurta_men_white",
+      "title": "Men's Solid Pure Cotton Linen Mandarin Collar Casual Short Kurta (Off White)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61vYk8N2yPL._UL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61vYk8N2yPL._UL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61vYk8N2yPL._UL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 97,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "electronics",
+      "store": "amazon",
+      "productId": "amz_jbl_flip_6_portable_bluetooth_speaker_black",
+      "title": "JBL Flip 6 Wireless Portable Bluetooth Speaker with Powerful Sound, Deep Bass, IP67 Waterproof & Dustproof (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61s780f2dOL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61s780f2dOL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61s780f2dOL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 98,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "electronics",
+      "store": "flipkart",
+      "productId": "fk_boat_rockerz_450_bluetooth_headphone_hazel_beige",
+      "title": "boAt Rockerz 450 with 15 Hours Battery, 40mm Drivers, Padded Ear Cups Bluetooth Headset (Hazel Beige)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/61u1VALn6JL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/61u1VALn6JL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/61u1VALn6JL._SL1500_.jpg",
+      "failureReason": "none (valid)",
+      "failureDetail": "Real, unique, verified product image",
+      "httpStatus": 200
+    },
+    {
+      "index": 99,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "electronics",
+      "store": "meesho",
+      "productId": "meesho_10000mah_slim_pocket_power_bank",
+      "title": "10000 mAh Ultra Slim Dual Output Fast Charging Power Bank with Digital Battery Indicator (Black)",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71VfGg-xGSL._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71VfGg-xGSL._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71VfGg-xGSL._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    },
+    {
+      "index": 100,
+      "section": "cart_and_catalog",
+      "categoryOrQuery": "mobiles",
+      "store": "amazon",
+      "productId": "amz_redmi_note_13_pro_5g_black",
+      "title": "Redmi Note 13 Pro 5G (Midnight Black, 8GB RAM, 128GB Storage) | 200MP OIS Camera | 1.5K 120Hz AMOLED",
+      "rawImageSources": {
+        "fallbackCatalogImageUrl": "https://m.media-amazon.com/images/I/71dWgCHn10L._SL1500_.jpg",
+        "images": [
+          "https://m.media-amazon.com/images/I/71dWgCHn10L._SL1500_.jpg"
+        ]
+      },
+      "chosenUrl": "https://m.media-amazon.com/images/I/71dWgCHn10L._SL1500_.jpg",
+      "failureReason": "http_error",
+      "failureDetail": "HTTP 404 Not Found from store CDN",
+      "httpStatus": 404
+    }
+  ]
+}
