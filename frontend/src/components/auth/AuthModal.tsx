@@ -374,6 +374,9 @@ export const AuthModal: React.FC<Props> = ({
         const res = await signUp({ email, password, fullName });
         if (res.error) {
           setErrorMsg(res.error);
+          if (res.error.toLowerCase().includes('already exists')) {
+            setEmailMode('signin');
+          }
         } else {
           setSuccessMsg('Account created successfully!');
           await executePendingAction();

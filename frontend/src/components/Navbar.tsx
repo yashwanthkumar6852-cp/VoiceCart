@@ -1,11 +1,74 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ShoppingBag, Search, Package, Settings, Mic, Sun, Moon, Globe, User, LogOut, ChevronDown, Lock, Minimize2, Maximize2 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  MapPin,
+  Search,
+  Mic,
+  ShoppingCart,
+  ChevronDown,
+  X,
+  User,
+  Package,
+  LogOut,
+  Globe,
+  Settings,
+  Sparkles,
+  Zap,
+  Check,
+  Tag,
+  Moon,
+  Sun,
+  Scale,
+  Heart
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { SupportedLanguage } from '../i18n/translations';
+import { useTheme } from '../context/ThemeContext';
+import { SupportedLanguage, translations } from '../i18n/translations';
 import { PendingAuthAction } from '../types/auth';
+import { useVoice } from '../hooks/useVoice';
+import { commandRouter } from '../voice/commandRouter';
+import { actionDispatcher, DispatcherHandlers } from '../voice/dispatcher';
+import { voiceStore } from '../voice/voiceStore';
+import { CATEGORY_ITEMS } from './CategoryIconTabBar';
 
 export type TabType = 'home' | 'search' | 'cart' | 'orders' | 'settings';
+
+export interface SavedLocation {
+  pincode: string;
+  city: string;
+}
+
+const PINCODE_CITY_PREFIXES: Record<string, string> = {
+  '56': 'Bengaluru',
+  '57': 'Mysuru',
+  '58': 'Hubballi',
+  '59': 'Belagavi',
+  '11': 'New Delhi',
+  '40': 'Mumbai',
+  '41': 'Pune',
+  '60': 'Chennai',
+  '70': 'Kolkata',
+  '50': 'Hyderabad',
+  '38': 'Ahmedabad',
+  '30': 'Jaipur',
+  '68': 'Kochi',
+  '64': 'Coimbatore',
+  '62': 'Madurai',
+  '22': 'Lucknow',
+  '20': 'Noida',
+  '12': 'Gurugram',
+  '14': 'Ludhiana',
+  '16': 'Chandigarh',
+  '45': 'Indore',
+  '46': 'Bhopal',
+  '80': 'Patna',
+  '75': 'Bhubaneswar',
+  '78': 'Guwahati'
+};
+
+const resolveCityFromPincode = (pin: string): string => {
+  const prefix = pin.slice(0, 2);
+  return PINCODE_CITY_PREFIXES[prefix] || 'India';
+};
 
 interface Props {
   activeTab: TabType;
@@ -16,6 +79,12 @@ interface Props {
   onNavigate?: (path: string) => void;
   onOpenAuth?: (mode?: 'login' | 'signup' | 'profile', notice?: string) => void;
   onProtectedAction?: (action: PendingAuthAction, notice?: string) => void;
+  searchQuery?: string;
+  onSearch?: (query: string, category?: string) => void;
+  voiceHandlers?: DispatcherHandlers;
+  voiceContext?: any;
+  selectedCategory?: string;
+  onCategoryChange?: (category: string) => void;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -26,28 +95,149 @@ export const Navbar: React.FC<Props> = ({
   onLanguageChange,
   onNavigate,
   onOpenAuth,
-  onProtectedAction
+  onProtectedAction,
+  searchQuery: initialSearchQuery = '',
+  onSearch,
+  voiceHandlers,
+  voiceContext,
+  selectedCategory = 'all',
+  onCategoryChange
 }) => {
   const { user, profile, isAuthenticated, signOut } = useAuth();
-  const { theme, toggleTheme, density, toggleDensity } = useTheme();
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const { theme, toggleTheme } = useTheme();
+  const t = translations[language === 'hi' || language === 'kn' ? language : 'en'] || translations.en;
 
-  // Close dropdown on click outside
+  // Search State
+  const [searchInput, setSearchInput] = useState(initialSearchQuery);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-        setIsProfileMenuOpen(false);
+    if (initialSearchQuery !== undefined) {
+      setSearchInput(initialSearchQuery);
+    }
+  }, [initialSearchQuery]);
+
+  // Dropdowns State
+  const [isLoginMenuOpen, setIsLoginMenuOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+
+  // Delivery Location State
+  const [savedLocation, setSavedLocation] = useState<SavedLocation | null>(() => {
+    try {
+      const stored = localStorage.getItem('voicecart_delivery_location');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [pincodeInput, setPincodeInput] = useState('');
+  const [pincodeError, setPincodeError] = useState<string | null>(null);
+
+  const loginMenuRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (loginMenuRef.current && !loginMenuRef.current.contains(target)) {
+        setIsLoginMenuOpen(false);
+      }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(target)) {
+        setIsMoreMenuOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
+
+  // Voice Search Pipeline Integration
+  const langCode = language === 'kn' ? 'kn-IN' : language === 'hi' ? 'hi-IN' : 'en-IN';
+  const [voiceTooltip, setVoiceTooltip] = useState<string | null>(null);
+
+  const handleFinalTranscript = useCallback(
+    async (transcript: string) => {
+      if (!transcript.trim()) return;
+      setSearchInput(transcript);
+      setVoiceTooltip(`Heard: "${transcript}"`);
+      setTimeout(() => setVoiceTooltip(null), 3000);
+
+      if (voiceHandlers) {
+        try {
+          const currentContext = voiceStore.getContext();
+          const targetLang: SupportedLanguage = language === 'auto' ? 'en' : language;
+          const commandResult = await commandRouter.route(transcript, currentContext, targetLang);
+
+          if (commandResult.action === 'search') {
+            const queryToSearch = commandResult.params?.query || transcript;
+            if (onSearch) onSearch(queryToSearch, selectedCategory);
+          } else {
+            await actionDispatcher.dispatch(commandResult, voiceHandlers, transcript);
+          }
+        } catch (err) {
+          console.error('Voice routing error in header:', err);
+          if (onSearch) onSearch(transcript, selectedCategory);
+        }
+      } else if (onSearch) {
+        onSearch(transcript, selectedCategory);
+      }
+    },
+    [voiceHandlers, language, onSearch, selectedCategory]
+  );
+
+  const { state: voiceState, liveTranscript, startListening, stopListening } = useVoice(
+    langCode,
+    (transcript) => handleFinalTranscript(transcript)
+  );
+
+  const isMicListening = voiceState === 'listening' || voiceState === 'recording_fallback';
+
+  const handleToggleVoice = () => {
+    if (isMicListening) {
+      stopListening();
+    } else {
+      setVoiceTooltip(t.listening);
+      startListening();
+    }
+  };
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (onSearch) {
+      onSearch(searchInput.trim(), selectedCategory);
+    }
+  };
+
+  const handleSaveLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPin = pincodeInput.trim();
+    if (!/^\d{6}$/.test(cleanPin)) {
+      setPincodeError('Please enter a valid 6-digit Indian PIN code');
+      return;
+    }
+    const resolvedCity = resolveCityFromPincode(cleanPin);
+    const newLoc: SavedLocation = { pincode: cleanPin, city: resolvedCity };
+    setSavedLocation(newLoc);
+    try {
+      localStorage.setItem('voicecart_delivery_location', JSON.stringify(newLoc));
+    } catch {}
+    setPincodeError(null);
+    setIsLocationModalOpen(false);
+  };
+
+  const handleClearLocation = () => {
+    setSavedLocation(null);
+    try {
+      localStorage.removeItem('voicecart_delivery_location');
+    } catch {}
+    setPincodeInput('');
+    setIsLocationModalOpen(false);
+  };
 
   const handleCartClick = () => {
     if (!isAuthenticated) {
       if (onProtectedAction) {
-        onProtectedAction({ type: 'OPEN_CART' }, 'Please log in to view and manage your shopping cart.');
+        onProtectedAction({ type: 'OPEN_CART' }, 'Please log in to view your cart.');
       } else if (onOpenAuth) {
         onOpenAuth('login', 'Please log in to view your cart.');
       }
@@ -56,173 +246,396 @@ export const Navbar: React.FC<Props> = ({
     onTabChange('cart');
   };
 
-  const handleOrdersClick = () => {
-    if (!isAuthenticated) {
-      if (onProtectedAction) {
-        onProtectedAction({ type: 'NAVIGATE_ROUTE', payload: { route: '/orders' } }, 'Please log in to view and track your orders.');
-      } else if (onOpenAuth) {
-        onOpenAuth('login', 'Please log in to track your orders.');
-      }
-      return;
-    }
-    if (onNavigate) {
-      onNavigate('/orders');
-    } else {
-      onTabChange('orders');
-    }
-  };
-
-  const userInitial = profile?.full_name
-    ? profile.full_name.charAt(0).toUpperCase()
-    : user?.email
-    ? user.email.charAt(0).toUpperCase()
-    : 'U';
-
-  const displayName = profile?.full_name || (user?.email ? user.email.split('@')[0] : 'Member');
+  const displayName = profile?.full_name || (user?.email ? user.email.split('@')[0] : 'Yashwanth');
 
   return (
     <>
-      {/* Top Header */}
       <header
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 0',
-          marginBottom: '20px',
+          position: 'sticky',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          background: 'var(--nav-bg)',
+          color: 'var(--text-main)',
           borderBottom: '1px solid var(--border-color)',
-          position: 'relative'
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.05)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          width: '100%',
+          fontFamily: language === 'kn' ? "'Noto Sans Kannada', 'Inter', sans-serif" : "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
         }}
       >
         <div
-          onClick={() => onTabChange('home')}
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+          style={{
+            maxWidth: '1680px',
+            margin: '0 auto',
+            padding: '10px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px'
+          }}
         >
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 15px var(--primary-glow)'
-            }}
-          >
-            <Mic size={22} color="#fff" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--text-main)' }}>
-              Voice<span style={{ color: '#06b6d4' }}>Cart</span>
-            </h1>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-              Live Amazon • Flipkart • Meesho
+          {/* 1. Left: VoiceCart Logo + Deliver to */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+            <div
+              onClick={() => {
+                if (onNavigate) onNavigate('/');
+                onTabChange('home');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer'
+              }}
+              title="VoiceCart Home"
+            >
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)'
+                }}
+              >
+                <Mic size={20} color="#ffffff" strokeWidth={2.4} />
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 800,
+                    color: 'var(--text-main)',
+                    lineHeight: 1,
+                    letterSpacing: '-0.3px'
+                  }}
+                >
+                  Voice<span style={{ color: 'var(--primary)' }}>Cart</span>
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.65rem',
+                    color: 'var(--text-muted)',
+                    fontWeight: 600,
+                    letterSpacing: '0.2px',
+                    marginTop: '2px'
+                  }}
+                >
+                  {t.speakSearchShop}
+                </div>
+              </div>
+            </div>
+
+            {/* Deliver To Location Capsule */}
+            <div
+              onClick={() => setIsLocationModalOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                padding: '5px 10px',
+                borderRadius: '8px',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-color)',
+                fontSize: '0.78rem',
+                color: 'var(--text-secondary)',
+                transition: 'border-color 0.15s ease'
+              }}
+              title={t.selectLocation}
+            >
+              <MapPin size={15} color="var(--primary)" />
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{t.deliverTo}</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-main)', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {savedLocation ? `${savedLocation.city}` : t.selectLocation}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Desktop Quick Nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            onClick={() => onTabChange('search')}
+          {/* 2. Center: Search Bar Capsule */}
+          <div
+            className="header-search-container"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: activeTab === 'search' ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-              border: activeTab === 'search' ? '1px solid var(--primary)' : '1px solid transparent',
-              color: activeTab === 'search' ? 'var(--primary)' : 'var(--text-secondary)',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            <Search size={16} /> Search & Compare
-          </button>
-
-          <button
-            onClick={handleOrdersClick}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: activeTab === 'orders' ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-              border: activeTab === 'orders' ? '1px solid var(--primary)' : '1px solid transparent',
-              color: activeTab === 'orders' ? 'var(--primary)' : 'var(--text-secondary)',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            <Package size={16} />
-            <span>Track Orders</span>
-            {!isAuthenticated && <Lock size={12} color="var(--text-muted)" style={{ marginLeft: '2px' }} />}
-          </button>
-
-          {/* Cart Button */}
-          <button
-            onClick={handleCartClick}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: activeTab === 'cart' ? 'var(--primary)' : 'var(--bg-pill)',
-              border: '1px solid var(--border-color)',
-              color: activeTab === 'cart' ? '#fff' : 'var(--text-main)',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
+              flex: '1 1 440px',
+              maxWidth: '680px',
               position: 'relative'
             }}
           >
-            <ShoppingBag size={16} />
-            <span>Cart</span>
-            {isAuthenticated ? (
-              cartCount > 0 && (
-                <span
-                  style={{
-                    background: 'var(--accent-rose)',
-                    color: '#fff',
-                    borderRadius: '10px',
-                    fontSize: '0.7rem',
-                    padding: '2px 6px',
-                    fontWeight: 800,
-                    marginLeft: '2px'
-                  }}
-                >
-                  {cartCount}
-                </span>
-              )
-            ) : (
-              <Lock size={12} color="var(--text-muted)" style={{ marginLeft: '2px' }} />
-            )}
-          </button>
-
-          {/* User Auth / Profile Menu */}
-          {isAuthenticated ? (
-            <div ref={profileMenuRef} style={{ position: 'relative' }}>
-              <button
-                onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+            <form
+              onSubmit={handleSearchSubmit}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                height: '42px',
+                borderRadius: '9999px',
+                background: 'var(--bg-subtle)',
+                border: isSearchFocused ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
+                boxShadow: isSearchFocused ? '0 0 0 3px var(--primary-glow)' : 'none',
+                overflow: 'hidden',
+                padding: '0 5px 0 14px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Search size={17} color="var(--text-muted)" style={{ marginRight: '8px', flexShrink: 0 }} />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                placeholder={t.searchPlaceholder}
                 style={{
+                  flex: 1,
+                  height: '100%',
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: '0.86rem',
+                  color: 'var(--text-main)',
+                  fontWeight: 500
+                }}
+              />
+
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput('');
+                    if (onSearch) onSearch('', selectedCategory);
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: '2px'
+                  }}
+                  title="Clear search"
+                >
+                  <X size={15} />
+                </button>
+              )}
+
+              {/* Microphone inside Search Bar */}
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                title={isMicListening ? `${t.listeningPrompt}` : t.searchTooltip}
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '50%',
+                  background: isMicListening ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  border: 'none',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(79, 70, 229, 0.35)',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <Mic size={16} className={isMicListening ? 'mic-active-pulse' : ''} />
+              </button>
+            </form>
+
+            {/* Voice Feedback Tooltip */}
+            {(isMicListening || liveTranscript || voiceTooltip) && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--bg-card)',
+                  color: 'var(--text-main)',
+                  padding: '8px 14px',
+                  borderRadius: '12px',
+                  boxShadow: 'var(--shadow-card)',
+                  zIndex: 1100,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  background: 'var(--bg-pill)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-main)',
-                  padding: '6px 12px',
-                  borderRadius: '10px',
                   fontSize: '0.84rem',
                   fontWeight: 600,
+                  border: isMicListening ? '2px solid var(--accent-rose)' : '1px solid var(--border-color)'
+                }}
+              >
+                {isMicListening && <Mic size={15} color="#ef4444" className="mic-active-pulse" />}
+                <span>{liveTranscript ? `${t.listening} "${liveTranscript}"` : voiceTooltip || t.listening}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 3. Right Action Icons & Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            {/* Language Switcher Pills */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px',
+                background: 'var(--bg-subtle)',
+                padding: '2px 4px',
+                borderRadius: '20px',
+                border: '1px solid var(--border-color)'
+              }}
+            >
+              <Globe size={13} color="var(--text-muted)" style={{ margin: '0 3px' }} />
+              {[
+                { code: 'en', label: 'English', short: 'EN' },
+                { code: 'hi', label: 'हिन्दी', short: 'HI' },
+                { code: 'kn', label: 'ಕನ್ನಡ', short: 'KN' }
+              ].map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  onClick={() => {
+                    onLanguageChange(l.code as SupportedLanguage);
+                    voiceStore.setLanguage(l.code as SupportedLanguage);
+                  }}
+                  title={l.label}
+                  style={{
+                    padding: '3px 7px',
+                    borderRadius: '14px',
+                    border: 'none',
+                    background: language === l.code ? 'var(--primary)' : 'transparent',
+                    color: language === l.code ? '#ffffff' : 'var(--text-muted)',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {l.short}
+                </button>
+              ))}
+            </div>
+
+            {/* Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="theme-toggle-btn"
+              title={theme === 'dark' ? t.lightMode : t.darkMode}
+              aria-label="Toggle Light and Dark Mode"
+              style={{
+                padding: '5px 10px',
+                borderRadius: '20px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-subtle)',
+                color: 'var(--text-main)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {theme === 'dark' ? (
+                <Sun size={15} color="#f59e0b" />
+              ) : (
+                <Moon size={15} color="#6366f1" />
+              )}
+              <span className="theme-toggle-text" style={{ fontSize: '0.76rem' }}>
+                {theme === 'dark' ? t.lightMode : t.darkMode}
+              </span>
+            </button>
+
+            {/* Compare Link */}
+            <div
+              onClick={() => onTabChange('search')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                cursor: 'pointer',
+                fontSize: '0.84rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                padding: '4px 6px',
+                borderRadius: '6px',
+                transition: 'color 0.15s ease'
+              }}
+              title={t.compare}
+            >
+              <Scale size={16} color="var(--text-muted)" />
+              <span>{t.compare}</span>
+            </div>
+
+            {/* Cart Button */}
+            <div
+              onClick={handleCartClick}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                fontSize: '0.84rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                padding: '4px 6px',
+                borderRadius: '6px',
+                transition: 'color 0.15s ease'
+              }}
+              title={t.cart}
+            >
+              <div style={{ position: 'relative' }}>
+                <ShoppingCart size={18} color="var(--text-muted)" />
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-7px',
+                    right: '-9px',
+                    background: 'var(--primary)',
+                    color: '#ffffff',
+                    borderRadius: '10px',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '1px 5px',
+                    lineHeight: '14px'
+                  }}
+                >
+                  {cartCount > 0 ? cartCount : 0}
+                </span>
+              </div>
+              <span>{t.cart}</span>
+            </div>
+
+            {/* Profile Dropdown */}
+            <div ref={loginMenuRef} style={{ position: 'relative' }}>
+              <div
+                onClick={() => setIsLoginMenuOpen((prev) => !prev)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  color: 'var(--text-main)',
+                  padding: '5px 8px',
+                  borderRadius: '24px',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-color)',
+                  transition: 'background 0.15s ease'
                 }}
               >
                 <div
@@ -230,365 +643,441 @@ export const Navbar: React.FC<Props> = ({
                     width: '26px',
                     height: '26px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                    color: '#fff',
+                    background: 'var(--primary)',
+                    color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '0.75rem'
+                    fontSize: '0.74rem',
+                    fontWeight: 700
                   }}
                 >
-                  {userInitial}
+                  {isAuthenticated ? displayName.charAt(0).toUpperCase() : 'Y'}
                 </div>
                 <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {displayName}
+                  {isAuthenticated ? `Hi, ${displayName.split(' ')[0]}` : 'Hi, Yashwanth'}
                 </span>
-                <ChevronDown size={14} color="var(--text-muted)" />
-              </button>
+                <ChevronDown size={13} color="var(--text-muted)" />
+              </div>
 
-              {/* Profile Dropdown Menu */}
-              {isProfileMenuOpen && (
+              {/* Login / Profile Dropdown Popup */}
+              {isLoginMenuOpen && (
                 <div
                   style={{
                     position: 'absolute',
                     top: 'calc(100% + 8px)',
                     right: 0,
-                    width: '220px',
+                    width: '230px',
                     background: 'var(--bg-card)',
+                    borderRadius: '12px',
+                    boxShadow: 'var(--shadow-card)',
+                    padding: '14px',
+                    zIndex: 1200,
                     border: '1px solid var(--border-color)',
-                    borderRadius: '14px',
-                    boxShadow: '0 12px 35px rgba(0, 0, 0, 0.35)',
-                    padding: '8px',
-                    zIndex: 100,
-                    animation: 'fadeIn 0.15s ease'
+                    color: 'var(--text-main)'
                   }}
                 >
-                  <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '6px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {profile?.full_name || 'VoiceCart Member'}
+                  {!isAuthenticated ? (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLoginMenuOpen(false);
+                          if (onNavigate) onNavigate('/login');
+                          else if (onOpenAuth) onOpenAuth('login');
+                        }}
+                        style={{
+                          width: '100%',
+                          background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '10px 0',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)'
+                        }}
+                      >
+                        {t.login}
+                      </button>
+
+                      <div style={{ marginTop: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {t.dontHaveAccount}{' '}
+                        <span
+                          onClick={() => {
+                            setIsLoginMenuOpen(false);
+                            if (onNavigate) onNavigate('/signup');
+                            else if (onOpenAuth) onOpenAuth('signup');
+                          }}
+                          style={{ color: 'var(--primary)', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          {t.signup}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {profile?.email || (profile?.phone ? `+91 ${profile.phone}` : '')}
+                  ) : (
+                    <div>
+                      <div style={{ paddingBottom: '8px', borderBottom: '1px solid var(--border-color)', marginBottom: '8px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.welcomeBack}</div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {profile?.full_name || user?.email}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setIsLoginMenuOpen(false);
+                          if (onNavigate) onNavigate('/account');
+                          else if (onOpenAuth) onOpenAuth('profile');
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--text-main)',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          borderRadius: '6px',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <User size={15} color="var(--primary)" />
+                        <span>{t.myAccount}</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsLoginMenuOpen(false);
+                          if (onNavigate) onNavigate('/orders');
+                          else onTabChange('orders');
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--text-main)',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          borderRadius: '6px',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <Package size={15} color="var(--primary)" />
+                        <span>{t.myOrders}</span>
+                      </button>
+
+                      <div style={{ height: '1px', background: 'var(--border-color)', margin: '6px 0' }} />
+
+                      <button
+                        onClick={async () => {
+                          setIsLoginMenuOpen(false);
+                          await signOut();
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#dc2626',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          borderRadius: '6px',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <LogOut size={15} color="#dc2626" />
+                        <span>{t.logout}</span>
+                      </button>
                     </div>
+                  )}
+
+                  <div style={{ height: '1px', background: 'var(--border-color)', margin: '8px 0' }} />
+
+                  {/* Language switch quick row inside dropdown */}
+                  <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                    {[
+                      { code: 'en', label: 'EN' },
+                      { code: 'hi', label: 'HI' },
+                      { code: 'kn', label: 'KN' }
+                    ].map((l) => (
+                      <button
+                        key={l.code}
+                        type="button"
+                        onClick={() => {
+                          onLanguageChange(l.code as SupportedLanguage);
+                          voiceStore.setLanguage(l.code as SupportedLanguage);
+                        }}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          border: language === l.code ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                          background: language === l.code ? 'var(--primary)' : 'transparent',
+                          color: language === l.code ? '#ffffff' : 'var(--text-muted)',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {l.label}
+                      </button>
+                    ))}
                   </div>
-
-                  <button
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      if (onNavigate) {
-                        onNavigate('/orders');
-                      } else {
-                        onTabChange('orders');
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--text-main)',
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <Package size={15} color="var(--primary)" />
-                    <span>My Orders</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsProfileMenuOpen(false);
-                      if (onNavigate) {
-                        onNavigate('/account');
-                      } else if (onOpenAuth) {
-                        onOpenAuth('profile');
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--text-main)',
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <User size={15} color="var(--secondary)" />
-                    <span>Profile & Account</span>
-                  </button>
-
-                  <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '6px 0' }} />
-
-                  <button
-                    onClick={async () => {
-                      setIsProfileMenuOpen(false);
-                      await signOut();
-                    }}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--accent-rose)',
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <LogOut size={15} color="var(--accent-rose)" />
-                    <span>Log Out</span>
-                  </button>
                 </div>
               )}
             </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                onClick={() => {
-                  if (onNavigate) onNavigate('/login');
-                  else if (onOpenAuth) onOpenAuth('login');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'transparent',
-                  border: '1.5px solid #1877f2',
-                  color: '#1877f2',
-                  padding: '7px 14px',
-                  borderRadius: '8px',
-                  fontSize: '0.84rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Log in
-              </button>
+          </div>
+        </div>
 
-              <button
-                onClick={() => {
-                  if (onNavigate) onNavigate('/signup');
-                  else if (onOpenAuth) onOpenAuth('signup');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: '#1877f2',
-                  border: 'none',
-                  color: '#fff',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '0.84rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(24, 119, 242, 0.3)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Sign up
-              </button>
+        {/* Mobile Search & Controls Row */}
+        <div
+          className="header-mobile-search-row"
+          style={{ padding: '0 16px 10px 16px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            {/* Mobile Language Pills */}
+            <div style={{ display: 'flex', gap: '3px', flex: 1, background: 'var(--bg-subtle)', padding: '2px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+              {[
+                { code: 'en', short: 'EN' },
+                { code: 'hi', short: 'हिन्दी' },
+                { code: 'kn', short: 'ಕನ್ನಡ' }
+              ].map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  onClick={() => {
+                    onLanguageChange(l.code as SupportedLanguage);
+                    voiceStore.setLanguage(l.code as SupportedLanguage);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '3px 4px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: language === l.code ? 'var(--primary)' : 'transparent',
+                    color: language === l.code ? '#ffffff' : 'var(--text-muted)',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {l.short}
+                </button>
+              ))}
             </div>
-          )}
 
-          {/* Language Selector Pill */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'var(--bg-pill)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '20px',
-              padding: '3px 6px',
-              gap: '3px'
-            }}
-          >
-            <Globe size={13} color="var(--text-muted)" style={{ marginLeft: '4px' }} />
-            {[
-              { code: 'auto', label: 'Auto' },
-              { code: 'en', label: 'EN' },
-              { code: 'hi', label: 'हिन्दी' },
-              { code: 'kn', label: 'ಕನ್ನಡ' }
-            ].map((item) => (
-              <button
-                key={item.code}
-                onClick={() => onLanguageChange(item.code as any)}
-                style={{
-                  background: language === item.code ? 'var(--primary)' : 'transparent',
-                  color: language === item.code ? '#fff' : 'var(--text-main)',
-                  border: 'none',
-                  padding: '3px 8px',
-                  borderRadius: '12px',
-                  fontSize: '0.72rem',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontFamily: item.code === 'kn' ? "'Noto Sans Kannada', sans-serif" : 'inherit'
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
+            {/* Mobile Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 10px',
+                borderRadius: '16px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-subtle)',
+                color: 'var(--text-main)',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              {theme === 'dark' ? <Sun size={13} color="#f59e0b" /> : <Moon size={13} color="#6366f1" />}
+              <span>{theme === 'dark' ? t.lightMode : t.darkMode}</span>
+            </button>
           </div>
 
-          {/* Density (Compact / Comfortable Screen) Switcher */}
-          <button
-            onClick={toggleDensity}
+          <form
+            onSubmit={handleSearchSubmit}
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: '5px',
-              background: density === 'compact' ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-pill)',
-              border: density === 'compact' ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-              color: density === 'compact' ? 'var(--primary)' : 'var(--text-main)',
-              padding: '8px 10px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              transition: 'all 0.2s ease'
+              height: '40px',
+              borderRadius: '20px',
+              background: 'var(--bg-subtle)',
+              border: '1.5px solid var(--primary)',
+              padding: '0 8px 0 12px'
             }}
-            title={density === 'compact' ? 'Switch to Comfortable View' : 'Switch to Compact Screen View'}
           >
-            {density === 'compact' ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            <span style={{ display: 'none', md: 'inline' } as any}>{density === 'compact' ? 'Compact' : 'Normal'}</span>
-          </button>
-
-          {/* Theme Switcher Toggle */}
-          <button
-            onClick={toggleTheme}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--bg-pill)',
-              border: '1px solid var(--border-color)',
-              color: theme === 'dark' ? '#fbbf24' : '#4f46e5',
-              padding: '8px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-
-          <button
-            onClick={() => onTabChange('settings')}
-            style={{
-              background: activeTab === 'settings' ? 'rgba(99, 102, 241, 0.2)' : 'var(--bg-pill)',
-              border: activeTab === 'settings' ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-              color: activeTab === 'settings' ? 'var(--primary)' : 'var(--text-muted)',
-              padding: '8px',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-            title="Settings & Status"
-          >
-            <Settings size={18} />
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile Bottom Fixed Tab Bar */}
-      <nav
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'var(--nav-bg)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid var(--border-color)',
-          padding: '8px 16px',
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          zIndex: 90
-        }}
-      >
-        {[
-          { id: 'home', label: 'Voice', icon: Mic },
-          { id: 'search', label: 'Compare', icon: Search },
-          { id: 'cart', label: 'Cart', icon: ShoppingBag, badge: isAuthenticated ? cartCount : 0, requiresAuth: true },
-          { id: 'orders', label: 'Orders', icon: Package, requiresAuth: true },
-          { id: 'settings', label: 'Settings', icon: Settings }
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (tab.requiresAuth && !isAuthenticated) {
-                  if (tab.id === 'cart') handleCartClick();
-                  else if (tab.id === 'orders') handleOrdersClick();
-                  return;
-                }
-                onTabChange(tab.id as TabType);
+            <Search size={16} color="var(--text-muted)" style={{ marginRight: '8px' }} />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t.searchPlaceholder}
+              style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                fontSize: '13px',
+                color: 'var(--text-main)'
               }}
+            />
+            <button
+              type="button"
+              onClick={handleToggleVoice}
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '0.72rem',
-                fontWeight: isActive ? 700 : 500,
-                cursor: 'pointer',
-                position: 'relative'
+                color: isMicListening ? '#ef4444' : 'var(--primary)',
+                padding: '6px',
+                cursor: 'pointer'
               }}
             >
-              <div style={{ position: 'relative' }}>
-                <Icon size={20} />
-                {tab.badge && tab.badge > 0 ? (
-                  <span
+              <Mic size={17} className={isMicListening ? 'mic-active-pulse' : ''} />
+            </button>
+          </form>
+        </div>
+      </header>
+
+      {/* Pincode Modal */}
+      {isLocationModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}
+          onClick={() => setIsLocationModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--bg-card)',
+              color: 'var(--text-main)',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '380px',
+              overflow: 'hidden',
+              boxShadow: 'var(--shadow-card)',
+              border: '1px solid var(--border-color)',
+              animation: 'fadeIn 0.2s ease'
+            }}
+          >
+            <div
+              style={{
+                padding: '14px 18px',
+                background: 'var(--bg-subtle)',
+                borderBottom: '1px solid var(--border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                <MapPin size={18} color="var(--primary)" />
+                <span>{t.selectLocation}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLocationModalOpen(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px 18px' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>
+                Enter an Indian 6-digit PIN code to check live delivery speed and availability.
+              </p>
+
+              <form onSubmit={handleSaveLocation}>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={pincodeInput}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setPincodeInput(val);
+                    if (pincodeError) setPincodeError(null);
+                  }}
+                  placeholder="e.g. 560001"
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    border: pincodeError ? '1.5px solid #dc2626' : '1.5px solid var(--border-color)',
+                    background: 'var(--bg-input)',
+                    outline: 'none',
+                    color: 'var(--text-main)',
+                    marginBottom: '6px'
+                  }}
+                />
+                {pincodeError && (
+                  <div style={{ fontSize: '0.78rem', color: '#dc2626', marginBottom: '12px' }}>
+                    {pincodeError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                  <button
+                    type="submit"
                     style={{
-                      position: 'absolute',
-                      top: '-4px',
-                      right: '-8px',
-                      background: 'var(--accent-rose)',
-                      color: '#fff',
-                      fontSize: '0.62rem',
+                      flex: 1,
+                      background: 'var(--primary)',
+                      border: 'none',
+                      color: '#ffffff',
+                      padding: '10px 16px',
                       borderRadius: '8px',
-                      padding: '1px 5px',
-                      fontWeight: 800
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
                     }}
                   >
-                    {tab.badge}
-                  </span>
-                ) : null}
-              </div>
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+                    {t.apply}
+                  </button>
+
+                  {savedLocation && (
+                    <button
+                      type="button"
+                      onClick={handleClearLocation}
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-secondary)',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.84rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {t.clearCart}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
-

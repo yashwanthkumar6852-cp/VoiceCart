@@ -159,16 +159,11 @@ export const CategoryIconTabBar: React.FC<Props> = ({
   return (
     <div
       style={{
-        position: 'sticky',
-        top: '68px',
-        zIndex: 25,
+        width: '100%',
         background: 'var(--bg-card, #ffffff)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border-color, #e4e6eb)',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
-        margin: '0 -16px 20px -16px',
-        padding: '8px 16px 8px 16px',
+        borderBottom: '1px solid var(--border-color, #f0f0f0)',
+        margin: '0 0 16px 0',
+        padding: '6px 16px 4px 16px',
         transition: 'background 0.2s ease, border-color 0.2s ease'
       }}
     >

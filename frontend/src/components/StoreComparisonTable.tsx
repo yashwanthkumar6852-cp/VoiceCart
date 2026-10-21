@@ -1,33 +1,37 @@
 import React from 'react';
 import { StoreComparisonSummary, StoreStatus } from '../types';
 import { ExternalLink, CheckCircle2, AlertCircle, Clock, Star } from 'lucide-react';
+import { SupportedLanguage, translations } from '../i18n/translations';
 
 interface Props {
   comparisonMatrix: StoreComparisonSummary[];
   storeStatuses: StoreStatus[];
+  language?: SupportedLanguage;
 }
 
-export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeStatuses }) => {
+export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeStatuses, language = 'en' }) => {
+  const t = translations[language === 'hi' || language === 'kn' ? language : 'en'] || translations.en;
+
   return (
     <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>⚖️ Live 3-Store Cross Comparison</span>
+          <span>{t.crossStoreComparison}</span>
         </h3>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Real-time API Verified</span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.realTimeData}</span>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
-              <th style={{ padding: '10px 12px' }}>Store</th>
-              <th style={{ padding: '10px 12px' }}>Top Matched Item</th>
-              <th style={{ padding: '10px 12px' }}>Price</th>
-              <th style={{ padding: '10px 12px' }}>Rating</th>
-              <th style={{ padding: '10px 12px' }}>Delivery</th>
-              <th style={{ padding: '10px 12px' }}>Availability</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Store Link</th>
+              <th style={{ padding: '10px 12px' }}>{t.storePlatform}</th>
+              <th style={{ padding: '10px 12px' }}>{t.viewProduct}</th>
+              <th style={{ padding: '10px 12px' }}>{t.dealPrice}</th>
+              <th style={{ padding: '10px 12px' }}>{t.customerRating}</th>
+              <th style={{ padding: '10px 12px' }}>{t.deliverySpeed}</th>
+              <th style={{ padding: '10px 12px' }}>{t.platformStatus}</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>{t.buyOn}</th>
             </tr>
           </thead>
           <tbody>
@@ -81,13 +85,13 @@ export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeS
                       </span>
                     ) : (
                       <span style={{ color: 'var(--text-dim)', fontStyle: 'italic', fontSize: '0.8rem' }}>
-                        {item.notice || `No exact match on ${item.storeDisplayName}`}
+                        {item.notice || `${t.notAvailable} on ${item.storeDisplayName}`}
                       </span>
                     )}
                   </td>
 
                   <td style={{ padding: '12px', fontWeight: 700, color: isAvailable ? 'var(--accent-green)' : 'var(--text-dim)' }}>
-                    {isAvailable ? `₹${item.lowestPrice?.toLocaleString()}` : '—'}
+                    {isAvailable ? `₹${item.lowestPrice?.toLocaleString('en-IN')}` : '—'}
                   </td>
 
                   <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>
@@ -127,7 +131,7 @@ export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeS
                           fontWeight: 600
                         }}
                       >
-                        <CheckCircle2 size={13} /> {item.isExactMatch ? 'Exact Match' : 'Closest Match'}
+                        <CheckCircle2 size={13} /> {item.isExactMatch ? t.exactMatch : t.similarMatches}
                       </span>
                     ) : (
                       <span
@@ -144,7 +148,7 @@ export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeS
                         }}
                         title={item.notice || status?.message}
                       >
-                        <AlertCircle size={13} /> {item.notice || 'No exact match'}
+                        <AlertCircle size={13} /> {item.notice || t.notAvailable}
                       </span>
                     )}
                   </td>
@@ -165,10 +169,10 @@ export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeS
                           fontWeight: 600
                         }}
                       >
-                        Open <ExternalLink size={13} />
+                        {t.buyOn} <ExternalLink size={13} />
                       </a>
                     ) : (
-                      <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}>N/A</span>
+                      <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}>{t.notAvailable}</span>
                     )}
                   </td>
                 </tr>

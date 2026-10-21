@@ -158,7 +158,8 @@ export const httpClient: AxiosInstance = axios.create({
   timeout: 35000,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'bypass-tunnel-reminder': 'true'
   }
 });
 

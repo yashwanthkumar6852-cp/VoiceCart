@@ -3,11 +3,13 @@ import { Heart, Star, Check, ShieldCheck, ShoppingCart, ExternalLink } from 'luc
 import { Product, StoreName } from '../types';
 import { formatIndianPrice, extractRealSpecBullets } from '../utils/productNormalizer';
 import { ProductImage } from './ProductImage';
+import { SupportedLanguage, getTranslation } from '../i18n/translations';
 
 interface ProductRowProps {
   product: Product;
   index?: number;
   sessionId?: string;
+  language?: SupportedLanguage;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectProduct?: (product: Product) => void;
   onNavigateRoute?: (route: string) => void;
@@ -21,6 +23,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
   product,
   index,
   sessionId,
+  language = 'en',
   onAddToCart,
   onSelectProduct,
   onNavigateRoute,
@@ -30,6 +33,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
   onToggleWishlist
 }) => {
   const [localWishlisted, setLocalWishlisted] = useState(isWishlisted);
+  const t = getTranslation(language);
 
   const bullets = extractRealSpecBullets(product);
   const formattedPrice = formatIndianPrice(product.price);
@@ -152,8 +156,8 @@ export const ProductRow: React.FC<ProductRowProps> = ({
               position: 'absolute',
               top: '10px',
               right: '10px',
-              background: 'rgba(255, 255, 255, 0.9)',
-              border: 'none',
+              background: 'var(--bg-card, rgba(255, 255, 255, 0.9))',
+              border: '1px solid var(--border-color, rgba(0,0,0,0.08))',
               borderRadius: '50%',
               width: '32px',
               height: '32px',
@@ -201,7 +205,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
               accentColor: 'var(--primary, #2874f0)'
             }}
           />
-          <span>Add to Compare</span>
+          <span>{t.compare}</span>
         </label>
       </div>
 
@@ -227,7 +231,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
               marginBottom: '2px'
             }}
           >
-            Sponsored
+            {t.sponsored}
           </span>
         )}
 
@@ -275,13 +279,13 @@ export const ProductRow: React.FC<ProductRowProps> = ({
             </div>
           ) : (
             <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
-              No ratings yet
+              {t.noRatings}
             </span>
           )}
 
           {product.ratingCount > 0 && (
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted, #64748b)', fontWeight: 500 }}>
-              {product.ratingCount.toLocaleString('en-IN')} Ratings & {product.reviewCount ? product.reviewCount.toLocaleString('en-IN') : Math.round(product.ratingCount * 0.08).toLocaleString('en-IN')} Reviews
+              {product.ratingCount.toLocaleString('en-IN')} {t.ratings} & {product.reviewCount ? product.reviewCount.toLocaleString('en-IN') : Math.round(product.ratingCount * 0.08).toLocaleString('en-IN')} {t.reviews}
             </span>
           )}
         </div>
@@ -361,9 +365,9 @@ export const ProductRow: React.FC<ProductRowProps> = ({
         {/* Delivery & Free Delivery */}
         <div style={{ fontSize: '0.8rem', color: 'var(--text-main, #1e293b)', marginBottom: '8px' }}>
           {product.delivery?.isFree || product.shippingFee === 0 ? (
-            <span style={{ color: '#16a34a', fontWeight: 600 }}>Free delivery </span>
+            <span style={{ color: '#16a34a', fontWeight: 600 }}>{t.freeDelivery} </span>
           ) : (
-            <span style={{ color: 'var(--text-muted, #64748b)' }}>₹{product.shippingFee} Delivery </span>
+            <span style={{ color: 'var(--text-muted, #64748b)' }}>₹{product.shippingFee} {t.delivery} </span>
           )}
           <span style={{ color: 'var(--text-muted, #64748b)' }}>
             {product.delivery?.date || `by ${product.deliveryDays || 2} days`}
@@ -400,7 +404,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
                 borderRadius: '4px'
               }}
             >
-              <ShieldCheck size={12} /> Trusted
+              <ShieldCheck size={12} /> {t.trusted}
             </span>
           )}
         </div>
@@ -408,7 +412,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
         {/* Stock Status */}
         {product.inStock === false ? (
           <span style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 700, marginBottom: '8px' }}>
-            Out of Stock
+            {t.outOfStock}
           </span>
         ) : product.quantityInfo?.stockStatus === 'LOW_STOCK' ? (
           <span style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 700, marginBottom: '8px' }}>
@@ -442,7 +446,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
               gap: '5px'
             }}
           >
-            <ShoppingCart size={14} /> Add
+            <ShoppingCart size={14} /> {t.addToCart}
           </button>
         </div>
       </div>

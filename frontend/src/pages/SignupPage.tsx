@@ -288,7 +288,11 @@ export const SignupPage: React.FC<Props> = ({
       });
 
       if (res.error) {
-        if (res.error.toLowerCase().includes('already registered') || res.error.toLowerCase().includes('duplicate')) {
+        if (
+          res.error.toLowerCase().includes('already registered') ||
+          res.error.toLowerCase().includes('already exists') ||
+          res.error.toLowerCase().includes('duplicate')
+        ) {
           setIsDuplicate(true);
           setErrorMsg(t.duplicateNotice);
         } else {

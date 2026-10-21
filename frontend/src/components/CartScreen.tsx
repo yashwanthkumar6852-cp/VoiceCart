@@ -23,9 +23,11 @@ import { api } from '../services/api';
 import { PaymentModal, PaymentTab } from './PaymentModal';
 import { generateAndPrintReceipt } from '../utils/receiptGenerator';
 import { ProductImage } from './ProductImage';
+import { SupportedLanguage, getTranslation } from '../i18n/translations';
 
 interface Props {
   cart: CartItem[];
+  language?: SupportedLanguage;
   onRemoveItem: (id: string) => void;
   onClearCart: () => void;
   onCartUpdated: (cart: CartItem[]) => void;
@@ -81,6 +83,7 @@ const SAMPLE_OWN_STORE_PRODUCTS: Product[] = [
 
 export const CartScreen: React.FC<Props> = ({
   cart,
+  language = 'en',
   onRemoveItem,
   onClearCart,
   onCartUpdated,
@@ -89,6 +92,7 @@ export const CartScreen: React.FC<Props> = ({
   onAddToCart,
   initialPaymentTab = 'upi'
 }) => {
+  const t = getTranslation(language);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<string | null>(null);
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
@@ -253,7 +257,7 @@ export const CartScreen: React.FC<Props> = ({
           <ShoppingBag size={40} color="var(--text-muted)" />
         </div>
         <h3 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-main)' }}>
-          Your basket is empty
+          {t.emptyCart}
         </h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '28px' }}>
           Speak your wish to compare live products across Amazon, Flipkart, and Meesho, or explore featured products below.
@@ -388,7 +392,7 @@ export const CartScreen: React.FC<Props> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
               <ShoppingBag size={22} color="var(--primary)" />
-              <span>Shopping Basket ({cart.length})</span>
+              <span>{t.shoppingBasket} ({cart.length})</span>
             </h3>
 
             {/* Select All Toggle */}
@@ -413,7 +417,7 @@ export const CartScreen: React.FC<Props> = ({
               ) : (
                 <Square size={14} />
               )}
-              <span>{selectedItemIds.size === cart.length ? 'Deselect All' : 'Select All'}</span>
+              <span>{selectedItemIds.size === cart.length ? (language === 'kn' ? 'ಎಲ್ಲವನ್ನೂ ರದ್ದುಮಾಡಿ' : language === 'hi' ? 'सभी अचयनित करें' : 'Deselect All') : (language === 'kn' ? 'ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ' : language === 'hi' ? 'सभी चुनें' : 'Select All')}</span>
             </button>
           </div>
 
@@ -436,7 +440,7 @@ export const CartScreen: React.FC<Props> = ({
               }}
             >
               <RefreshCw size={13} className={isVerifying ? 'mic-active-pulse' : ''} />
-              {isVerifying ? 'Verifying...' : 'Re-check Live Prices'}
+              {isVerifying ? (language === 'kn' ? 'ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...' : language === 'hi' ? 'सत्यापित हो रहा है...' : 'Verifying...') : (language === 'kn' ? 'ದರಗಳನ್ನು ಮರು-ಪರಿಶೀಲಿಸಿ' : language === 'hi' ? 'कीमतों की दोबारा जांच' : 'Re-check Live Prices')}
             </button>
             <button
               onClick={onClearCart}
@@ -450,7 +454,7 @@ export const CartScreen: React.FC<Props> = ({
                 cursor: 'pointer'
               }}
             >
-              Clear Basket
+              {t.clearCart}
             </button>
           </div>
         </div>
@@ -507,7 +511,7 @@ export const CartScreen: React.FC<Props> = ({
                     )}
                   </div>
 
-                  <div style={{ width: '68px', height: '68px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', background: '#fff' }}>
+                  <div style={{ width: '68px', height: '68px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-subtle, #ffffff)' }}>
                     <ProductImage
                       src={item.product.imageUrl}
                       images={item.product.images}
@@ -613,7 +617,7 @@ export const CartScreen: React.FC<Props> = ({
                         fontSize: '0.75rem'
                       }}
                     >
-                      <Trash2 size={13} /> Remove
+                      <Trash2 size={13} /> {t.remove}
                     </button>
                   </div>
                 </div>
@@ -651,7 +655,7 @@ export const CartScreen: React.FC<Props> = ({
           </div>
 
           <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>
-            Order Summary
+            {t.orderSummary}
           </h4>
 
           {/* Breakdown List */}
@@ -691,7 +695,7 @@ export const CartScreen: React.FC<Props> = ({
 
           {/* Total Payable */}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 800, marginBottom: '18px', color: 'var(--text-main)' }}>
-            <span>Total Payable</span>
+            <span>{t.totalPayable}</span>
             <span style={{ color: 'var(--primary)' }}>₹{selectedTotal.toLocaleString()}</span>
           </div>
 
@@ -721,8 +725,8 @@ export const CartScreen: React.FC<Props> = ({
               <Lock size={18} />
               <span>
                 {selectedCartItems.length === 0
-                  ? 'Select Items to Pay'
-                  : `Pay Now • ₹${selectedTotal.toLocaleString()}`}
+                  ? (language === 'kn' ? 'ಪಾವತಿಸಲು ಐಟಂ ಆಯ್ಕೆಮಾಡಿ' : language === 'hi' ? 'भुगतान के लिए आइटम चुनें' : 'Select Items to Pay')
+                  : `${t.checkout} • ₹${selectedTotal.toLocaleString()}`}
               </span>
             </button>
 

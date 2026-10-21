@@ -27,11 +27,19 @@ import { ProductDetailsPage } from './pages/ProductDetailsPage';
 import { CrossStoreComparisonPage } from './pages/CrossStoreComparisonPage';
 import { LayoutGrid, List, X, Layers, CloudLightning } from 'lucide-react';
 import { CategoryIconTabBar } from './components/CategoryIconTabBar';
+import { VoiceAssistantHub } from './components/VoiceAssistantHub';
+import { DashboardLeftSidebar } from './components/dashboard/DashboardLeftSidebar';
+import { DashboardHeroBanner } from './components/dashboard/DashboardHeroBanner';
+import { CategoryQuickStrip } from './components/dashboard/CategoryQuickStrip';
+import { DashboardFeaturedProducts } from './components/dashboard/DashboardFeaturedProducts';
+import { DashboardPromoBanner } from './components/dashboard/DashboardPromoBanner';
+import { DashboardTopCategories } from './components/dashboard/DashboardTopCategories';
+import { DashboardRightSidebar } from './components/dashboard/DashboardRightSidebar';
 import { useAuth } from './context/AuthContext';
 import { PendingAuthAction } from './types/auth';
 import { voiceStore } from './voice/voiceStore';
 import { actionDispatcher, DispatcherHandlers } from './voice/dispatcher';
-import { translations, SupportedLanguage } from './i18n/translations';
+import { translations, SupportedLanguage, getStoredLanguage, setStoredLanguage, getTranslation } from './i18n/translations';
 
 export const App: React.FC = () => {
   const { user, isAuthenticated, authState, signOut, pendingAction, setPendingAction } = useAuth();
@@ -61,7 +69,10 @@ export const App: React.FC = () => {
   const [feedCategory, setFeedCategory] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const cat = new URLSearchParams(window.location.search).get('category');
-      return cat ? (cat === 'for_you' ? 'all' : cat) : 'all';
+      if (cat === 'deals' || cat === 'for_you' || cat === 'for-you') {
+        return 'all';
+      }
+      return cat || 'all';
     }
     return 'all';
   });
@@ -98,16 +109,22 @@ export const App: React.FC = () => {
   const [authPendingNotice, setAuthPendingNotice] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const [language, setLanguage] = useState<SupportedLanguage>('en');
+  const [language, setLanguage] = useState<SupportedLanguage>(() => getStoredLanguage());
+  const handleLanguageChange = useCallback((newLang: SupportedLanguage) => {
+    setLanguage(newLang);
+    setStoredLanguage(newLang);
+    voiceStore.setLanguage(newLang);
+  }, []);
+
   const [paymentTab, setPaymentTab] = useState<'cod' | 'upi' | 'qr' | 'wallet' | 'card_netbanking'>('upi');
-  const [layoutMode, setLayoutMode] = useState<'row' | 'grid'>('row');
+  const [layoutMode, setLayoutMode] = useState<'row' | 'grid'>('grid');
   const [comparedProducts, setComparedProducts] = useState<Product[]>([]);
   const [selectedStoreFilter, setSelectedStoreFilter] = useState<string>('all');
   const [minPriceInput, setMinPriceInput] = useState<string>('');
   const [maxPriceInput, setMaxPriceInput] = useState<string>('');
   const [brandSearch, setBrandSearch] = useState<string>('');
   const [ratingFilter, setRatingFilter] = useState<number>(0);
-  const t = translations[language] || translations.en;
+  const t = getTranslation(language);
 
   const addToSearchHistory = (q: string) => {
     const clean = q.trim();
@@ -227,7 +244,7 @@ export const App: React.FC = () => {
   }, [currentPath, isAuthenticated]);
 
   const handleSelectCategory = (catId: string) => {
-    const cleanCat = catId === 'for_you' ? 'all' : catId;
+    const cleanCat = catId === 'for_you' || catId === 'for-you' || catId === 'deals' ? 'all' : catId;
     setFeedCategory(cleanCat);
     setFeedSubCategory('all');
     setSelectedBrand('all');
@@ -246,13 +263,14 @@ export const App: React.FC = () => {
   };
 
   const loadDashboardFeed = useCallback(async (
-    cat = feedCategory,
+    rawCat = feedCategory,
     refresh = false,
     page = feedPage,
     subCat = feedSubCategory,
     sort = feedSort,
     brand = selectedBrand
   ) => {
+    const cat = rawCat === 'deals' || rawCat === 'for_you' || rawCat === 'for-you' || !rawCat ? 'all' : rawCat;
     const requestKey = `${cat}_${subCat}_${brand}_${selectedStoreFilter || 'all'}_${page}_${sort}_${refresh}`;
     if (inFlightFeedRef.current === requestKey) {
       return;
@@ -621,8 +639,7 @@ export const App: React.FC = () => {
       setActiveTab('cart');
     },
     onSetLanguage: (lang) => {
-      setLanguage(lang);
-      voiceStore.setLanguage(lang);
+      handleLanguageChange(lang);
     },
     onOpenPaymentModal: () => {
       setActiveTab('cart');
@@ -686,10 +703,7 @@ export const App: React.FC = () => {
       <LoginPage
         onNavigate={navigate}
         language={language}
-        onLanguageChange={(l) => {
-          setLanguage(l);
-          voiceStore.setLanguage(l);
-        }}
+        onLanguageChange={handleLanguageChange}
         pendingNotice={authPendingNotice}
       />
     );
@@ -700,10 +714,7 @@ export const App: React.FC = () => {
       <SignupPage
         onNavigate={navigate}
         language={language}
-        onLanguageChange={(l) => {
-          setLanguage(l);
-          voiceStore.setLanguage(l);
-        }}
+        onLanguageChange={handleLanguageChange}
         pendingNotice={authPendingNotice}
       />
     );
@@ -714,10 +725,7 @@ export const App: React.FC = () => {
       <ForgotPasswordPage
         onNavigate={navigate}
         language={language}
-        onLanguageChange={(l) => {
-          setLanguage(l);
-          voiceStore.setLanguage(l);
-        }}
+        onLanguageChange={handleLanguageChange}
       />
     );
   }
@@ -749,6 +757,41 @@ export const App: React.FC = () => {
     );
   }
 
+  const commonNavbarProps = {
+    cartCount: cart.reduce((s, i) => s + i.quantity, 0),
+    language,
+    onLanguageChange: handleLanguageChange,
+    onNavigate: navigate,
+    onOpenAuth: (mode: 'login' | 'signup' | 'profile' = 'login', notice?: string) => {
+      if (mode === 'signup') navigate('/signup');
+      else if (mode === 'login') navigate('/login');
+      else navigate('/account');
+    },
+    onProtectedAction: handleProtectedAction,
+    searchQuery,
+    onSearch: (q: string, cat?: string) => {
+      if (currentPath !== '/') {
+        navigate('/');
+      }
+      setActiveTab('home');
+      if (cat && cat !== 'all') {
+        setFeedCategory(cat);
+      }
+      setSearchQuery(q);
+      handleSearch(q);
+    },
+    voiceHandlers: dispatcherHandlers,
+    voiceContext: {
+      selectedProduct: searchResponse?.topRecommendations?.bestOverall || selectedProduct,
+      cart
+    },
+    selectedCategory: feedCategory,
+    onCategoryChange: (cat: string) => {
+      setFeedCategory(cat);
+      loadDashboardFeed(cat);
+    }
+  };
+
   if (currentPath.startsWith('/orders/')) {
     if (!isAuthenticated) {
       return null;
@@ -762,27 +805,17 @@ export const App: React.FC = () => {
             navigate('/');
             setActiveTab(tab);
           }}
-          cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-          language={language}
-          onLanguageChange={(l) => {
-            setLanguage(l);
-            voiceStore.setLanguage(l);
-          }}
-          onNavigate={navigate}
-          onOpenAuth={(mode = 'login', notice) => {
-            if (mode === 'signup') navigate('/signup');
-            else if (mode === 'login') navigate('/login');
-            else navigate('/account');
-          }}
-          onProtectedAction={handleProtectedAction}
+          {...commonNavbarProps}
         />
-        <OrderDetailPage
-          orderId={orderIdParam}
-          onNavigateRoute={navigate}
-          onAddToCart={handleAddToCart}
-          language={language}
-          showToast={showToast}
-        />
+        <div className="page-body-container">
+          <OrderDetailPage
+            orderId={orderIdParam}
+            onNavigateRoute={navigate}
+            onAddToCart={handleAddToCart}
+            language={language}
+            showToast={showToast}
+          />
+        </div>
       </div>
     );
   }
@@ -799,26 +832,16 @@ export const App: React.FC = () => {
             navigate('/');
             setActiveTab(tab);
           }}
-          cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-          language={language}
-          onLanguageChange={(l) => {
-            setLanguage(l);
-            voiceStore.setLanguage(l);
-          }}
-          onNavigate={navigate}
-          onOpenAuth={(mode = 'login', notice) => {
-            if (mode === 'signup') navigate('/signup');
-            else if (mode === 'login') navigate('/login');
-            else navigate('/account');
-          }}
-          onProtectedAction={handleProtectedAction}
+          {...commonNavbarProps}
         />
-        <OrdersListPage
-          onNavigateRoute={navigate}
-          onAddToCart={handleAddToCart}
-          language={language}
-          showToast={showToast}
-        />
+        <div className="page-body-container">
+          <OrdersListPage
+            onNavigateRoute={navigate}
+            onAddToCart={handleAddToCart}
+            language={language}
+            showToast={showToast}
+          />
+        </div>
       </div>
     );
   }
@@ -836,33 +859,20 @@ export const App: React.FC = () => {
             navigate('/');
             setActiveTab(tab);
           }}
-          cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-          language={language}
-          onLanguageChange={(l) => {
-            setLanguage(l);
-            voiceStore.setLanguage(l);
-          }}
-          onNavigate={navigate}
-          onOpenAuth={(mode = 'login', notice) => {
-            if (mode === 'signup') navigate('/signup');
-            else if (mode === 'login') navigate('/login');
-            else navigate('/account');
-          }}
-          onProtectedAction={handleProtectedAction}
+          {...commonNavbarProps}
         />
-        <AccountPage
-          initialSection={subSection}
-          onNavigateRoute={navigate}
-          onLanguageChange={(l) => {
-            setLanguage(l);
-            voiceStore.setLanguage(l);
-          }}
-          currentLanguage={language}
-          onNavigateToOrdersTab={() => {
-            navigate('/orders');
-            setActiveTab('orders');
-          }}
-        />
+        <div className="page-body-container">
+          <AccountPage
+            initialSection={subSection}
+            onNavigateRoute={navigate}
+            onLanguageChange={handleLanguageChange}
+            currentLanguage={language}
+            onNavigateToOrdersTab={() => {
+              navigate('/orders');
+              setActiveTab('orders');
+            }}
+          />
+        </div>
       </div>
     );
   }
@@ -883,30 +893,20 @@ export const App: React.FC = () => {
             navigate('/');
             setActiveTab(tab);
           }}
-          cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-          language={language}
-          onLanguageChange={(l) => {
-            setLanguage(l);
-            voiceStore.setLanguage(l);
-          }}
-          onNavigate={navigate}
-          onOpenAuth={(mode = 'login') => {
-            if (mode === 'signup') navigate('/signup');
-            else if (mode === 'login') navigate('/login');
-            else navigate('/account');
-          }}
-          onProtectedAction={handleProtectedAction}
+          {...commonNavbarProps}
         />
-        <ProductDetailsPage
-          store={productStore}
-          productId={productStoreId}
-          sessionId={sid}
-          initialProduct={selectedProduct}
-          onNavigateRoute={navigate}
-          onAddToCart={handleAddToCart}
-          language={language}
-          showToast={showToast}
-        />
+        <div className="page-body-container">
+          <ProductDetailsPage
+            store={productStore}
+            productId={productStoreId}
+            sessionId={sid}
+            initialProduct={selectedProduct}
+            onNavigateRoute={navigate}
+            onAddToCart={handleAddToCart}
+            language={language}
+            showToast={showToast}
+          />
+        </div>
       </div>
     );
   }
@@ -921,27 +921,17 @@ export const App: React.FC = () => {
             navigate('/');
             setActiveTab(tab);
           }}
-          cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-          language={language}
-          onLanguageChange={(l) => {
-            setLanguage(l);
-            voiceStore.setLanguage(l);
-          }}
-          onNavigate={navigate}
-          onOpenAuth={(mode = 'login', notice) => {
-            if (mode === 'signup') navigate('/signup');
-            else if (mode === 'login') navigate('/login');
-            else navigate('/account');
-          }}
-          onProtectedAction={handleProtectedAction}
+          {...commonNavbarProps}
         />
-        <CrossStoreComparisonPage
-          productKey={productKeyParam || undefined}
-          onNavigateRoute={navigate}
-          onAddToCart={handleAddToCart}
-          language={language}
-          showToast={showToast}
-        />
+        <div className="page-body-container">
+          <CrossStoreComparisonPage
+            productKey={productKeyParam || undefined}
+            onNavigateRoute={navigate}
+            onAddToCart={handleAddToCart}
+            language={language}
+            showToast={showToast}
+          />
+        </div>
       </div>
     );
   }
@@ -1021,233 +1011,31 @@ export const App: React.FC = () => {
           }
           setActiveTab(tab);
         }}
-        cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-        language={language}
-        onLanguageChange={(l) => {
-          setLanguage(l);
-          voiceStore.setLanguage(l);
-        }}
-        onNavigate={navigate}
-        onOpenAuth={(mode = 'login', notice) => {
-          if (mode === 'signup') navigate('/signup');
-          else if (mode === 'login') navigate('/login');
-          else {
-            setAuthModalMode('profile');
-            setAuthPendingNotice(notice || null);
-            setIsAuthModalOpen(true);
-          }
-        }}
-        onProtectedAction={handleProtectedAction}
+        {...commonNavbarProps}
       />
 
-      {/* Hero Voice Hub (Visible on Home & Search) */}
+      {/* 3-Column AI Voice Marketplace Dashboard */}
       {(activeTab === 'home' || activeTab === 'search') && (
-        <section
-          className="glass-panel hero-voice-section"
-          style={{
-            padding: '24px 20px',
-            marginBottom: '20px',
-            textAlign: 'center',
-            background: 'var(--hero-bg)',
-            border: '1px solid var(--hero-border)'
-          }}
-        >
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(6, 182, 212, 0.12)', border: '1px solid #06b6d4', color: '#06b6d4', padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700, marginBottom: '16px' }}>
-            <Sparkles size={14} /> {t.heroTag}
-          </div>
-
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
-            {t.heroTitle}
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', maxWidth: '520px', margin: '0 auto 20px', lineHeight: 1.5 }}>
-            {t.heroSubtitle}
-          </p>
-
-          {/* Voice Microphone Controller with Kannada, Hindi, and English */}
-          <VoiceMicButton
-            language={language}
-            onLanguageChange={(l) => {
-              setLanguage(l);
-              voiceStore.setLanguage(l);
-            }}
-            handlers={dispatcherHandlers}
-            context={{
-              selectedProduct: searchResponse?.topRecommendations?.bestOverall || selectedProduct,
-              cart
-            }}
-          />
-
-          {/* Search Input Box with Clear (X) and Search History Dropdown */}
-          <div style={{ maxWidth: '640px', margin: '24px auto 0', position: 'relative' }}>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSearch(searchQuery);
+        <div className="dashboard-grid-container">
+          {/* Column 1: Left Navigation Sidebar */}
+          <div className="dashboard-left-sidebar">
+            <DashboardLeftSidebar
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              selectedCategory={feedCategory}
+              onSelectCategory={handleSelectCategory}
+              language={language}
+              onStartVoice={() => {
+                const micBtn = document.querySelector('.header-search-container button[title*="voice"]') as HTMLButtonElement;
+                if (micBtn) micBtn.click();
               }}
-              style={{ display: 'flex', gap: '8px', position: 'relative' }}
-            >
-              <div style={{ position: 'relative', flex: 1 }}>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 250)}
-                  placeholder="Search for a product, e.g. boAt earbuds under 2000"
-                  className="glass-input"
-                  style={{ width: '100%', paddingLeft: '40px', paddingRight: searchQuery ? '40px' : '16px' }}
-                />
-                <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '14px' }} />
-
-                {/* Clear (X) button */}
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={handleClearSearch}
-                    style={{
-                      position: 'absolute',
-                      right: '12px',
-                      top: '12px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                    title="Clear search"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-
-                {/* Search History Dropdown (Shown only when input is focused) */}
-                {isSearchFocused && searchHistory.length > 0 && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 6px)',
-                      left: 0,
-                      right: 0,
-                      background: 'var(--bg-card, #0f172a)',
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
-                      zIndex: 100,
-                      overflow: 'hidden',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ padding: '8px 14px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-subtle)' }}>
-                      Recent Searches
-                    </div>
-                    {searchHistory.map((item, idx) => (
-                      <div
-                        key={idx}
-                        onMouseDown={() => {
-                          setSearchQuery(item);
-                          handleSearch(item);
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '10px 14px',
-                          cursor: 'pointer',
-                          color: 'var(--text-main)',
-                          fontSize: '0.86rem',
-                          borderBottom: idx < searchHistory.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-                          transition: 'background 0.15s ease'
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-subtle)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <Search size={14} color="var(--text-muted)" />
-                          <span>{item}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => removeSearchHistoryItem(e, item)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--text-dim)',
-                            cursor: 'pointer',
-                            padding: '4px',
-                            borderRadius: '4px'
-                          }}
-                          title="Remove search"
-                        >
-                          <X size={13} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                style={{
-                  background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
-                  border: 'none',
-                  color: '#fff',
-                  padding: '0 20px',
-                  borderRadius: '12px',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                {isLoading ? <RefreshCw size={16} className="mic-active-pulse" /> : <Search size={16} />}
-                {t.searchBtn}
-              </button>
-            </form>
-
-            {/* Quick Suggestions Chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginTop: '12px' }}>
-              {t.quickPills.map((pill, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setSearchQuery(pill);
-                    handleSearch(pill);
-                  }}
-                  style={{
-                    background: 'var(--bg-pill)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-muted)',
-                    padding: '4px 10px',
-                    borderRadius: '14px',
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                    fontFamily: language === 'kn' ? "'Noto Sans Kannada', sans-serif" : 'inherit'
-                  }}
-                >
-                  {pill}
-                </button>
-              ))}
-            </div>
+              onNavigateRoute={navigate}
+            />
           </div>
-        </section>
-      )}
 
-      {/* Main Tab Views */}
-      {(activeTab === 'home' || activeTab === 'search') && (
-        <main>
-          {/* A. ACTIVE SEARCH RESULTS VIEW */}
+          {/* Column 2: Center Main Content */}
+          <div className="dashboard-center-content">
+            {/* A. ACTIVE SEARCH RESULTS VIEW */}
           {searchResponse && searchQuery.trim() ? (
             <div>
               {/* Unified Search Outcome Banner */}
@@ -1274,7 +1062,7 @@ export const App: React.FC = () => {
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                   <div>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
-                      You searched for:
+                      {t.youSearchedFor}
                     </span>
                     <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>
                       {searchResponse.outcome?.cleanProductName || searchResponse.parsedQuery?.displayName || searchResponse.query}
@@ -1297,7 +1085,7 @@ export const App: React.FC = () => {
                           fontWeight: 700
                         }}
                       >
-                        <CheckCircle2 size={16} /> Exact Match Found ✓
+                        <CheckCircle2 size={16} /> {t.exactMatchFound}
                       </div>
                     ) : searchResponse.outcome?.status === 'similar_only' ? (
                       <div
@@ -1314,7 +1102,7 @@ export const App: React.FC = () => {
                           fontWeight: 700
                         }}
                       >
-                        Exact product not found, showing similar
+                        {t.similarOnlyFound}
                       </div>
                     ) : (
                       <div
@@ -1331,7 +1119,7 @@ export const App: React.FC = () => {
                           fontWeight: 700
                         }}
                       >
-                        No exact results
+                        {t.noExactResults}
                       </div>
                     )}
                   </div>
@@ -1352,6 +1140,7 @@ export const App: React.FC = () => {
                 <StoreComparisonTable
                   comparisonMatrix={searchResponse.comparisonMatrix}
                   storeStatuses={searchResponse.storeStatuses}
+                  language={language}
                 />
               )}
 
@@ -1395,8 +1184,8 @@ export const App: React.FC = () => {
                         style={{
                           padding: '4px 10px',
                           borderRadius: '6px',
-                          border: selectedStoreFilter === st ? '1px solid var(--primary, #2874f0)' : '1px solid #cbd5e1',
-                          background: selectedStoreFilter === st ? 'var(--primary, #2874f0)' : 'var(--bg-pill, #f8fafc)',
+                          border: selectedStoreFilter === st ? '1px solid var(--primary, #2874f0)' : '1px solid var(--border-color)',
+                          background: selectedStoreFilter === st ? 'var(--primary, #2874f0)' : 'var(--bg-card, #f8fafc)',
                           color: selectedStoreFilter === st ? '#fff' : 'var(--text-main, #334155)',
                           fontSize: '0.75rem',
                           fontWeight: 600,
@@ -1404,7 +1193,7 @@ export const App: React.FC = () => {
                           textTransform: 'capitalize'
                         }}
                       >
-                        {st === 'all' ? 'All Stores' : st}
+                        {st === 'all' ? (language === 'kn' ? 'ಎಲ್ಲಾ ಅಂಗಡಿಗಳು' : language === 'hi' ? 'सभी स्टोर्स' : 'All Stores') : st}
                       </button>
                     ))}
                   </div>
@@ -1427,7 +1216,7 @@ export const App: React.FC = () => {
                           }
                         }}
                         style={{
-                          background: filters.preference === pref.id ? 'var(--primary)' : 'var(--bg-pill)',
+                          background: filters.preference === pref.id ? 'var(--primary)' : 'var(--bg-card)',
                           border: '1px solid var(--border-color)',
                           color: filters.preference === pref.id ? '#fff' : 'var(--text-main)',
                           padding: '4px 8px',
@@ -1443,15 +1232,15 @@ export const App: React.FC = () => {
                   </div>
 
                   {/* View Switcher: Row vs Grid */}
-                  <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
                     <button
                       type="button"
                       title="List View"
                       onClick={() => setLayoutMode('row')}
                       style={{
                         padding: '5px 8px',
-                        background: layoutMode === 'row' ? 'var(--primary, #2874f0)' : '#fff',
-                        color: layoutMode === 'row' ? '#fff' : '#64748b',
+                        background: layoutMode === 'row' ? 'var(--primary, #2874f0)' : 'var(--bg-card)',
+                        color: layoutMode === 'row' ? '#fff' : 'var(--text-muted)',
                         border: 'none',
                         cursor: 'pointer',
                         display: 'flex',
@@ -1466,8 +1255,8 @@ export const App: React.FC = () => {
                       onClick={() => setLayoutMode('grid')}
                       style={{
                         padding: '5px 8px',
-                        background: layoutMode === 'grid' ? 'var(--primary, #2874f0)' : '#fff',
-                        color: layoutMode === 'grid' ? '#fff' : '#64748b',
+                        background: layoutMode === 'grid' ? 'var(--primary, #2874f0)' : 'var(--bg-card)',
+                        color: layoutMode === 'grid' ? '#fff' : 'var(--text-muted)',
                         border: 'none',
                         cursor: 'pointer',
                         display: 'flex',
@@ -1525,6 +1314,7 @@ export const App: React.FC = () => {
                                 product={product}
                                 index={index}
                                 sessionId={searchResponse.sessionId}
+                                language={language}
                                 onAddToCart={handleAddToCart}
                                 onSelectProduct={(p) => {
                                   setSelectedProduct(p);
@@ -1548,12 +1338,14 @@ export const App: React.FC = () => {
                             product={product}
                             index={index}
                             sessionId={searchResponse.sessionId}
+                            language={language}
                             onAddToCart={handleAddToCart}
                             onSelectProduct={(p) => {
                               setSelectedProduct(p);
                               navigate(`/product/${encodeURIComponent(p.store)}/${encodeURIComponent(p.productId)}?sid=${encodeURIComponent(searchResponse.sessionId || '')}`);
                             }}
                             onNavigateRoute={navigate}
+                            layout="grid"
                           />
                         ))}
                       </div>
@@ -1567,613 +1359,98 @@ export const App: React.FC = () => {
               )}
             </div>
           ) : (
-            /* B. DEFAULT DASHBOARD: TRENDING CATEGORIES FEED (REAL LIVE DATA ONLY) */
+            /* B. DEFAULT DASHBOARD: 5 HERO SECTIONS MATCHING USER REFERENCE IMAGE */
             <div>
-              {/* Category Chips Bar & Last Updated Timestamp */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '16px',
-                  gap: '12px',
-                  background: 'var(--bg-card, #fff)',
-                  padding: '14px 18px',
-                  borderRadius: '12px',
-                  border: '1px solid var(--border-color, #e2e8f0)'
+              {/* 1. Hero Banner with Voice Visuals */}
+              <DashboardHeroBanner
+                language={language}
+                onSearchPrompt={(q) => {
+                  setSearchQuery(q);
+                  handleSearch(q);
                 }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Sparkles size={18} color="var(--primary, #6366f1)" />
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                      Trending Products
-                    </h3>
-                  </div>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Live verified multi-store feed • Last updated {feedLastUpdated ? new Date(feedLastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recently'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={() => loadDashboardFeed(feedCategory, true)}
-                    disabled={feedLoading}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--bg-pill)',
-                      color: 'var(--text-main)',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <RefreshCw size={14} className={feedLoading ? 'mic-active-pulse' : ''} /> Refresh
-                  </button>
-
-                  {/* Store Filter Pills */}
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                    {['all', 'amazon', 'flipkart', 'meesho'].map((st) => (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => setSelectedStoreFilter(st)}
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          border: selectedStoreFilter === st ? '1px solid var(--primary, #2874f0)' : '1px solid #cbd5e1',
-                          background: selectedStoreFilter === st ? 'var(--primary, #2874f0)' : 'var(--bg-pill, #f8fafc)',
-                          color: selectedStoreFilter === st ? '#fff' : 'var(--text-main, #334155)',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          textTransform: 'capitalize'
-                        }}
-                      >
-                        {st === 'all' ? 'All Stores' : st}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Sort Dropdown */}
-                  <select
-                    value={feedSort}
-                    aria-label="Sort products"
-                    onChange={(e) => {
-                      const newSort = e.target.value;
-                      setFeedSort(newSort);
-                      setFeedPage(1);
-                      loadDashboardFeed(feedCategory, false, 1, feedSubCategory, newSort, selectedBrand);
-                    }}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.78rem',
-                      background: '#fff',
-                      color: 'var(--text-main, #334155)',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="relevance">Sort: Relevance</option>
-                    <option value="price_asc">Price: Low to High</option>
-                    <option value="price_desc">Price: High to Low</option>
-                    <option value="rating">Customer Rating</option>
-                    <option value="discount">Biggest Discount</option>
-                    <option value="newest">Newest First</option>
-                  </select>
-
-                  {/* View Switcher: Row vs Grid */}
-                  <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden' }}>
-                    <button
-                      type="button"
-                      title="List View"
-                      onClick={() => setLayoutMode('row')}
-                      style={{
-                        padding: '5px 8px',
-                        background: layoutMode === 'row' ? 'var(--primary, #2874f0)' : '#fff',
-                        color: layoutMode === 'row' ? '#fff' : '#64748b',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <List size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      title="Grid View"
-                      onClick={() => setLayoutMode('grid')}
-                      style={{
-                        padding: '5px 8px',
-                        background: layoutMode === 'grid' ? 'var(--primary, #2874f0)' : '#fff',
-                        color: layoutMode === 'grid' ? '#fff' : '#64748b',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <LayoutGrid size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Part B: Category Icon Tab Bar with Sub-Category Chips */}
-              <CategoryIconTabBar
-                selectedCategory={feedCategory}
-                onSelectCategory={handleSelectCategory}
-                selectedSubCategory={feedSubCategory}
-                onSelectSubCategory={(sub) => {
-                  setFeedSubCategory(sub);
-                  setFeedPage(1);
-                  loadDashboardFeed(feedCategory, false, 1, sub, feedSort, selectedBrand);
+                onStartVoice={() => {
+                  const micBtn = document.querySelector('.header-search-container button[title*="voice"]') as HTMLButtonElement | null;
+                  if (micBtn) micBtn.click();
                 }}
-                lastUpdated={feedLastUpdated}
               />
 
-              {/* Brands Row (When brands exist for category) */}
-              {catalogBrands && catalogBrands.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    overflowX: 'auto',
-                    paddingBottom: '10px',
-                    marginBottom: '12px',
-                    scrollbarWidth: 'none'
-                  }}
-                >
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted, #64748b)', whiteSpace: 'nowrap' }}>
-                    Top Brands:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedBrand('all');
-                      setFeedPage(1);
-                      loadDashboardFeed(feedCategory, false, 1, feedSubCategory, feedSort, 'all');
-                    }}
-                    style={{
-                      padding: '3px 10px',
-                      borderRadius: '12px',
-                      fontSize: '0.75rem',
-                      fontWeight: selectedBrand === 'all' ? 700 : 500,
-                      border: '1px solid',
-                      borderColor: selectedBrand === 'all' ? '#1877f2' : '#cbd5e1',
-                      background: selectedBrand === 'all' ? '#1877f2' : '#f8fafc',
-                      color: selectedBrand === 'all' ? '#fff' : '#334155',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0
-                    }}
-                  >
-                    All Brands
-                  </button>
-                  {catalogBrands.slice(0, 10).map((b) => (
-                    <button
-                      key={b.brand}
-                      type="button"
-                      onClick={() => {
-                        const newBrand = selectedBrand === b.brand ? 'all' : b.brand;
-                        setSelectedBrand(newBrand);
-                        setFeedPage(1);
-                        loadDashboardFeed(feedCategory, false, 1, feedSubCategory, feedSort, newBrand);
-                      }}
-                      style={{
-                        padding: '3px 10px',
-                        borderRadius: '12px',
-                        fontSize: '0.75rem',
-                        fontWeight: selectedBrand === b.brand ? 700 : 500,
-                        border: '1px solid',
-                        borderColor: selectedBrand === b.brand ? '#1877f2' : '#cbd5e1',
-                        background: selectedBrand === b.brand ? '#1877f2' : '#f8fafc',
-                        color: selectedBrand === b.brand ? '#fff' : '#334155',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}
-                    >
-                      {b.brand} ({b.count})
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* 2. Quick Category Horizontal Pills */}
+              <CategoryQuickStrip
+                selectedCategory={feedCategory}
+                onSelectCategory={handleSelectCategory}
+                language={language}
+              />
 
-              {/* Top Verified Deals Row */}
-              {topDeals && topDeals.length > 0 && feedSubCategory === 'all' && feedPage === 1 && (
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '1rem' }}>🔥</span>
-                      <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
-                        Top Verified Deals
-                      </h4>
-                      <span style={{ fontSize: '0.75rem', background: '#fee2e2', color: '#dc2626', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                        20%+ OFF
-                      </span>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '12px',
-                      overflowX: 'auto',
-                      paddingBottom: '8px',
-                      scrollbarWidth: 'none'
-                    }}
-                  >
-                    {topDeals.map((deal) => (
-                      <div
-                        key={`deal-${deal.store}-${deal.productId}`}
-                        onClick={() => {
-                          setSelectedProduct(deal);
-                          navigate(`/product/${encodeURIComponent(deal.store)}/${encodeURIComponent(deal.productId)}`);
-                        }}
-                        style={{
-                          minWidth: '180px',
-                          maxWidth: '200px',
-                          padding: '10px',
-                          background: '#fff',
-                          borderRadius: '10px',
-                          border: '1px solid #e2e8f0',
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                          transition: 'transform 0.15s ease, box-shadow 0.15s ease'
-                        }}
-                      >
-                        <div style={{ height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
-                          <ProductImage
-                            src={deal.imageUrl}
-                            alt={deal.title}
-                            store={deal.store}
-                            productId={deal.productId}
-                            style={{ maxHeight: '100px', maxWidth: '100%', objectFit: 'contain' }}
-                          />
-                        </div>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {deal.title}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '4px' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>₹{deal.price.toLocaleString('en-IN')}</span>
-                          {deal.discountPct > 0 && (
-                            <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700 }}>{deal.discountPct}% off</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* 3. Featured Products Grid (4 Cards with Badges, Prices & Comparison) */}
+              <DashboardFeaturedProducts
+                products={feedProducts}
+                language={language}
+                onAddToCart={handleAddToCart}
+                onSelectProduct={(p) => {
+                  setSelectedProduct(p);
+                  navigate(`/product/${encodeURIComponent(p.store)}/${encodeURIComponent(p.productId)}`);
+                }}
+                onNavigateRoute={navigate}
+                onToggleCompare={handleToggleCompare}
+                onViewAll={() => {
+                  setFeedCategory('all');
+                  loadDashboardFeed('all', true);
+                }}
+              />
 
-              {/* Feed Content: Skeleton / Error / Products */}
-              {feedLoading ? (
-                <div className="glass-panel" style={{ padding: '60px', textAlign: 'center' }}>
-                  <RefreshCw size={36} color="#6366f1" className="mic-active-pulse" style={{ margin: '0 auto 16px' }} />
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Loading Real Store Products...</h4>
-                  <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Fetching live catalog from Amazon, Flipkart & Meesho</p>
-                </div>
-              ) : feedError ? (
-                <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
-                  <p style={{ color: '#ef4444', marginBottom: '16px' }}>{feedError}</p>
-                  <button
-                    type="button"
-                    onClick={() => loadDashboardFeed(feedCategory, true)}
-                    style={{
-                      padding: '8px 18px',
-                      background: 'var(--primary)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Retry Loading Feed
-                  </button>
-                </div>
-              ) : feedProducts && feedProducts.length > 0 ? (
-                <div>
-                  {(() => {
-                    const displayedFeed = feedProducts.filter((p) => {
-                      if (selectedStoreFilter !== 'all' && p.store !== selectedStoreFilter) return false;
-                      return true;
-                    });
+              {/* 4. Special Offer Banner Strip */}
+              <DashboardPromoBanner
+                language={language}
+                onShopNow={() => {
+                  setFeedCategory('all');
+                  loadDashboardFeed('all', false, 1, 'all', 'cheapest');
+                }}
+              />
 
-                    if (displayedFeed.length === 0) {
-                      return (
-                        <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
-                          <p style={{ color: '#94a3b8' }}>No products found on {selectedStoreFilter.toUpperCase()} in this category.</p>
-                        </div>
-                      );
-                    }
-
-                    if (layoutMode === 'row') {
-                      return (
-                        <div
-                          style={{
-                            background: 'var(--bg-card, #fff)',
-                            borderRadius: '12px',
-                            border: '1px solid var(--border-color, #e2e8f0)',
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexDirection: 'column'
-                          }}
-                        >
-                          {displayedFeed.map((product, index) => {
-                            const isCompared = comparedProducts.some(
-                              (p) => p.productId === product.productId && p.store === product.store
-                            );
-                            const sid = (product as any).sessionId || `feed_session_${feedCategory}`;
-                            return (
-                              <ProductRow
-                                key={`${product.store}-${product.productId}`}
-                                product={product}
-                                index={index}
-                                sessionId={sid}
-                                onAddToCart={handleAddToCart}
-                                onSelectProduct={(p) => {
-                                  setSelectedProduct(p);
-                                  navigate(`/product/${encodeURIComponent(p.store)}/${encodeURIComponent(p.productId)}?sid=${encodeURIComponent(sid)}`);
-                                }}
-                                onNavigateRoute={navigate}
-                                isCompared={isCompared}
-                                onToggleCompare={handleToggleCompare}
-                              />
-                            );
-                          })}
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="products-grid">
-                        {displayedFeed.map((product, index) => {
-                          const sid = (product as any).sessionId || `feed_session_${feedCategory}`;
-                          return (
-                            <ProductCard
-                              key={`${product.store}-${product.productId}`}
-                              product={product}
-                              index={index}
-                              sessionId={sid}
-                              onAddToCart={handleAddToCart}
-                              onSelectProduct={(p) => {
-                                setSelectedProduct(p);
-                                navigate(`/product/${encodeURIComponent(p.store)}/${encodeURIComponent(p.productId)}?sid=${encodeURIComponent(sid)}`);
-                              }}
-                              onNavigateRoute={navigate}
-                            />
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Pagination Controls */}
-                  {feedTotalPages > 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '24px', padding: '16px' }}>
-                      <button
-                        type="button"
-                        disabled={feedPage <= 1}
-                        onClick={() => {
-                          const newPage = Math.max(1, feedPage - 1);
-                          setFeedPage(newPage);
-                          loadDashboardFeed(feedCategory, false, newPage, feedSubCategory, feedSort, selectedBrand);
-                          window.scrollTo({ top: 380, behavior: 'smooth' });
-                        }}
-                        style={{
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          border: '1px solid #cbd5e1',
-                          background: feedPage <= 1 ? '#f1f5f9' : '#fff',
-                          color: feedPage <= 1 ? '#94a3b8' : '#1e293b',
-                          fontWeight: 600,
-                          cursor: feedPage <= 1 ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        Previous
-                      </button>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                        Page {feedPage} of {feedTotalPages} ({feedTotalProducts} products)
-                      </span>
-                      <button
-                        type="button"
-                        disabled={feedPage >= feedTotalPages}
-                        onClick={() => {
-                          const newPage = Math.min(feedTotalPages, feedPage + 1);
-                          setFeedPage(newPage);
-                          loadDashboardFeed(feedCategory, false, newPage, feedSubCategory, feedSort, selectedBrand);
-                          window.scrollTo({ top: 380, behavior: 'smooth' });
-                        }}
-                        style={{
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          border: '1px solid #cbd5e1',
-                          background: feedPage >= feedTotalPages ? '#f1f5f9' : '#fff',
-                          color: feedPage >= feedTotalPages ? '#94a3b8' : '#1e293b',
-                          fontWeight: 600,
-                          cursor: feedPage >= feedTotalPages ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
-                  <p style={{ color: '#94a3b8', fontSize: '0.95rem', fontWeight: 500 }}>
-                    No products found yet for this category. Catalog is still being built.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => loadDashboardFeed(feedCategory, true)}
-                    style={{
-                      marginTop: '12px',
-                      padding: '8px 18px',
-                      background: 'var(--primary)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Refresh Catalog
-                  </button>
-                </div>
-              )}
+              {/* 5. Top Categories Tiles */}
+              <DashboardTopCategories
+                language={language}
+                onSelectCategory={handleSelectCategory}
+              />
             </div>
           )}
+          </div> {/* End dashboard-center-content */}
 
-          {/* Floating Compare Bar */}
-          {comparedProducts.length >= 2 && (
-            <div
-              style={{
-                position: 'fixed',
-                bottom: '24px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 999,
-                background: 'rgba(15, 23, 42, 0.95)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid rgba(99, 102, 241, 0.6)',
-                borderRadius: '16px',
-                padding: '12px 24px',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '20px',
-                maxWidth: '90vw',
-                animation: 'slideUp 0.3s ease'
+          {/* Column 3: Right Sidebar (Permanent Voice Assistant Hub, Comparison & Cart Summary) */}
+          <div className="dashboard-right-sidebar">
+            <DashboardRightSidebar
+              language={language}
+              onLanguageChange={handleLanguageChange}
+              handlers={dispatcherHandlers}
+              searchResponse={searchResponse}
+              recommendedProduct={searchResponse?.topRecommendations?.bestOverall || selectedProduct}
+              selectedProduct={selectedProduct}
+              cart={cart}
+              onAddToCart={handleAddToCart}
+              onSelectProduct={(p) => {
+                setSelectedProduct(p);
+                navigate(`/product/${encodeURIComponent(p.store)}/${encodeURIComponent(p.productId)}`);
               }}
-            >
-              {/* Product Thumbnails in compare bar */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {comparedProducts.map((cp) => (
-                  <div
-                    key={`${cp.store}-${cp.productId}`}
-                    style={{
-                      position: 'relative',
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '6px',
-                      background: '#fff',
-                      padding: '2px',
-                      border: '1px solid #475569'
-                    }}
-                  >
-                    <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-                      <ProductImage
-                        src={cp.imageUrl}
-                        images={cp.images}
-                        thumbnail={(cp as any).thumbnail}
-                        serpapi_thumbnail={(cp as any).serpapi_thumbnail}
-                        alt={cp.title}
-                        store={cp.store}
-                        productId={cp.productId}
-                        variantText={cp.variantText}
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleCompare(cp)}
-                      style={{
-                        position: 'absolute',
-                        top: '-6px',
-                        right: '-6px',
-                        background: '#ef4444',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '16px',
-                        height: '16px',
-                        fontSize: '10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff' }}>
-                  Compare {comparedProducts.length} Products
-                </div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                  Side-by-side cross-store specs & pricing
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const first = comparedProducts[0];
-                    const key = `${first.brand || ''}_${first.model || first.title.slice(0, 20)}`.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                    navigate(`/compare/specs/${key}`);
-                  }}
-                  style={{
-                    padding: '8px 18px',
-                    background: 'linear-gradient(135deg, var(--primary, #2874f0), #4f46e5)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Layers size={16} /> Compare Now
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setComparedProducts([])}
-                  style={{
-                    padding: '8px 12px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '8px',
-                    color: '#cbd5e1',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
-        </main>
+              onNavigateToCart={() => setActiveTab('cart')}
+              onNavigateToComparison={(pid) => {
+                if (pid) navigate(`/compare?products=${encodeURIComponent(pid)}`);
+                else navigate('/compare');
+              }}
+              onSearchPrompt={(q) => {
+                setSearchQuery(q);
+                handleSearch(q);
+              }}
+            />
+          </div>
+        </div>
       )}
+
+      <div className="page-body-container">
 
       {activeTab === 'cart' && (
         <CartScreen
           cart={cart}
+          language={language}
           onRemoveItem={handleRemoveFromCart}
           onClearCart={handleClearCart}
           onCartUpdated={setCart}
@@ -2202,11 +1479,12 @@ export const App: React.FC = () => {
         <SettingsScreen
           storeStatuses={storeStatuses}
           language={language}
-          onLanguageChange={setLanguage}
+          onLanguageChange={handleLanguageChange}
           preference={filters.preference || 'balanced'}
           onPreferenceChange={(pref) => setFilters((f) => ({ ...f, preference: pref }))}
         />
       )}
+      </div> {/* End page-body-container */}
 
       {/* Product Detail Modal */}
       <ProductDetailModal

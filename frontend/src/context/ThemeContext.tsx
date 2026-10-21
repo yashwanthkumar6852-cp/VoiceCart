@@ -16,34 +16,63 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem('voicecart_theme');
-    if (saved === 'dark' || saved === 'light') {
-      return saved;
-    }
-    // Default to dark mode for the premium neon voice aesthetic
-    return 'dark';
+    try {
+      const saved = localStorage.getItem('voicecart_theme');
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    } catch {}
+    return 'light';
   });
 
   const [density, setDensityState] = useState<DensityMode>(() => {
-    const saved = localStorage.getItem('voicecart_density');
-    if (saved === 'comfortable' || saved === 'compact') {
-      return saved;
-    }
-    return 'compact'; // Default to compact screen layout
+    try {
+      const saved = localStorage.getItem('voicecart_density');
+      if (saved === 'comfortable' || saved === 'compact') {
+        return saved;
+      }
+    } catch {}
+    return 'compact';
   });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    if (document.body) {
+      document.body.setAttribute('data-theme', theme);
+    }
     document.documentElement.classList.remove('dark', 'light');
     document.documentElement.classList.add(theme);
-    localStorage.setItem('voicecart_theme', theme);
+    try {
+      localStorage.setItem('voicecart_theme', theme);
+    } catch {}
   }, [theme]);
+
+  // Preserve system preference listener without overriding explicitly selected theme
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+      try {
+        const saved = localStorage.getItem('voicecart_theme');
+        if (!saved) {
+          setThemeState(e.matches ? 'dark' : 'light');
+        }
+      } catch {}
+    };
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-density', density);
     document.documentElement.classList.remove('comfortable', 'compact');
     document.documentElement.classList.add(`density-${density}`);
-    localStorage.setItem('voicecart_density', density);
+    try {
+      localStorage.setItem('voicecart_density', density);
+    } catch {}
   }, [density]);
 
   const toggleTheme = () => {

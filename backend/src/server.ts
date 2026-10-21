@@ -85,8 +85,8 @@ app.use(
         return callback(null, true);
       }
 
-      // Allow all Vercel and Render subdomains
-      if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com')) {
+      // Allow all Vercel, Render, and Localtunnel subdomains
+      if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com') || origin.endsWith('.loca.lt')) {
         return callback(null, true);
       }
 

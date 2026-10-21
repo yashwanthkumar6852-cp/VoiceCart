@@ -21,6 +21,7 @@ import { Product } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { calculateQualityScore, normalizeQuantityInfo, buildRealProductSpecifications } from '../utils/productNormalizer';
 import { ProductImage } from './ProductImage';
+import { SupportedLanguage, translations } from '../i18n/translations';
 
 interface Props {
   product: Product;
@@ -32,6 +33,7 @@ interface Props {
   isCompared?: boolean;
   onToggleCompare?: (product: Product) => void;
   layout?: 'grid' | 'row';
+  language?: SupportedLanguage;
 }
 
 export const ProductCard: React.FC<Props> = ({
@@ -43,11 +45,13 @@ export const ProductCard: React.FC<Props> = ({
   onNavigateRoute,
   isCompared = false,
   onToggleCompare,
-  layout = 'row'
+  layout = 'row',
+  language = 'en'
 }) => {
   const { isAuthenticated } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const t = translations[language === 'hi' || language === 'kn' ? language : 'en'] || translations.en;
   const [showQualityPopover, setShowQualityPopover] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -126,6 +130,221 @@ export const ProductCard: React.FC<Props> = ({
   // Delivery string
   const deliveryText = product.delivery?.date || (product.deliveryDays === 1 ? 'Tomorrow' : `Delivery in ${product.deliveryDays} days`);
   const isFreeDelivery = product.delivery?.isFree ?? (product.shippingFee === 0);
+
+  if (layout === 'grid') {
+    return (
+      <div
+        className="marketplace-grid-card"
+        onClick={openDetails}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{
+          background: 'var(--bg-card)',
+          borderRadius: '10px',
+          border: '1px solid var(--border-color)',
+          padding: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          cursor: 'pointer',
+          position: 'relative',
+          transition: 'all 0.2s ease',
+          boxShadow: isHovered ? '0 6px 16px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.04)',
+          overflow: 'hidden',
+          height: '100%'
+        }}
+      >
+        {/* Deal Tag / Value 365 on top-left (Shown when real discount >= 20%) */}
+        {product.discountPct >= 20 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '10px',
+              zIndex: 3,
+              background: '#e11d48',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: 800,
+              padding: '2px 8px',
+              borderRadius: '4px',
+              letterSpacing: '0.3px'
+            }}
+          >
+            Value 365
+          </div>
+        )}
+
+        {/* Wishlist Heart on top-right */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsWishlisted(!isWishlisted);
+          }}
+          style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            zIndex: 3,
+            background: 'rgba(255,255,255,0.9)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
+          }}
+        >
+          <Heart size={15} fill={isWishlisted ? '#ef4444' : 'none'} color={isWishlisted ? '#ef4444' : '#878787'} />
+        </button>
+
+        {/* Product Image Container with Rating Badge in Bottom-Left */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '210px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--img-bg)',
+            borderRadius: '6px',
+            overflow: 'hidden',
+            marginBottom: '10px'
+          }}
+        >
+          <ProductImage
+            src={product.imageUrl}
+            images={product.images}
+            alt={product.title}
+            index={index}
+            store={product.store}
+            productId={product.productId}
+            style={{
+              maxHeight: '190px',
+              maxWidth: '100%',
+              objectFit: 'contain',
+              transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+              transition: 'transform 0.25s ease'
+            }}
+          />
+
+          {/* Rating Badge Pill in Bottom-Left of Image (Matching User Image Exactly: 4.7 ★ (6,207)) */}
+          {product.rating > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '6px',
+                left: '6px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                zIndex: 2
+              }}
+            >
+              <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-main)' }}>
+                {product.rating.toFixed(1)}
+              </span>
+              <span style={{ fontSize: '10px', color: '#388e3c', fontWeight: 900 }}>★</span>
+              {product.ratingCount > 0 && (
+                <span style={{ fontSize: '10px', color: '#878787', marginLeft: '1px' }}>
+                  ({product.ratingCount >= 1000 ? `${(product.ratingCount / 1000).toFixed(1)}k` : product.ratingCount})
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Title: Brand in Bold + Title text */}
+        <div style={{ marginBottom: '8px' }}>
+          <div
+            style={{
+              fontSize: '14px',
+              color: 'var(--text-main)',
+              lineHeight: 1.35,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {product.brand && (
+              <strong style={{ fontWeight: 700, color: 'var(--text-main)', marginRight: '4px' }}>
+                {product.brand}
+              </strong>
+            )}
+            <span>{product.title}</span>
+          </div>
+        </div>
+
+        {/* Price Row: Bold Dark Selling Price + Strikethrough MRP + Discount */}
+        <div style={{ marginTop: 'auto', paddingTop: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
+              ₹{product.price.toLocaleString('en-IN')}
+            </span>
+            {product.mrp > product.price && (
+              <span style={{ fontSize: '13px', color: '#878787', textDecoration: 'line-through' }}>
+                ₹{product.mrp.toLocaleString('en-IN')}
+              </span>
+            )}
+            {product.discountPct > 0 && (
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#388e3c' }}>
+                {product.discountPct}% off
+              </span>
+            )}
+          </div>
+
+          {/* Deal / Store Pill */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: storeInfo.text,
+                background: storeInfo.bg,
+                padding: '2px 7px',
+                borderRadius: '3px'
+              }}
+            >
+              {storeInfo.label}
+            </span>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCart(product, 1);
+              }}
+              style={{
+                background: 'var(--primary)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '5px 12px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <ShoppingCart size={12} /> {t.addToCart}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

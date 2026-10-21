@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { Package, ExternalLink, Plus, CheckCircle2, Clock } from 'lucide-react';
 import { OrderRecord } from '../types';
 import { api } from '../services/api';
+import { SupportedLanguage, getTranslation } from '../i18n/translations';
 
 interface Props {
   orders: OrderRecord[];
+  language?: SupportedLanguage;
   onOrderAdded: (order: OrderRecord) => void;
 }
 
-export const OrdersScreen: React.FC<Props> = ({ orders, onOrderAdded }) => {
+export const OrdersScreen: React.FC<Props> = ({ orders, language = 'en', onOrderAdded }) => {
+  const t = getTranslation(language);
   const [showAddModal, setShowAddModal] = useState(false);
   const [smsText, setSmsText] = useState('');
   const [isParsing, setIsParsing] = useState(false);
@@ -68,7 +71,7 @@ export const OrdersScreen: React.FC<Props> = ({ orders, onOrderAdded }) => {
         <div>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
             <Package size={22} color="var(--primary)" />
-            <span>Tracked Orders ({orders.length})</span>
+            <span>{t.trackedOrders} ({orders.length})</span>
           </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '2px' }}>
             Live tracking across Amazon India, Flipkart, and Meesho
@@ -92,16 +95,16 @@ export const OrdersScreen: React.FC<Props> = ({ orders, onOrderAdded }) => {
             boxShadow: '0 4px 15px var(--primary-glow)'
           }}
         >
-          <Plus size={16} /> Track New Order
+          <Plus size={16} /> {t.trackOrder}
         </button>
       </div>
 
       {orders.length === 0 ? (
         <div className="glass-panel" style={{ padding: '50px 20px', textAlign: 'center' }}>
           <Package size={48} color="var(--text-dim)" style={{ margin: '0 auto 12px' }} />
-          <h4 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '6px', color: 'var(--text-main)' }}>No Orders Tracked Yet</h4>
+          <h4 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '6px', color: 'var(--text-main)' }}>{t.noOrders}</h4>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', maxWidth: '380px', margin: '0 auto 16px' }}>
-            After making a purchase on Amazon or Flipkart, paste the confirmation SMS or order ID here to track it.
+            {language === 'kn' ? 'ಖರೀದಿ ಮಾಡಿದ ನಂತರ, SMS ಅಥವಾ ಆರ್ಡರ್ ID ಯನ್ನು ಇಲ್ಲಿ ನಮೂದಿಸಿ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ.' : language === 'hi' ? 'खरीदारी के बाद, ट्रैक करने के लिए पुष्टिकरण SMS या ऑर्डर आईडी यहां चिपकाएं।' : 'After making a purchase on Amazon or Flipkart, paste the confirmation SMS or order ID here to track it.'}
           </p>
           <button
             onClick={() => setShowAddModal(true)}
@@ -116,7 +119,7 @@ export const OrdersScreen: React.FC<Props> = ({ orders, onOrderAdded }) => {
               cursor: 'pointer'
             }}
           >
-            Paste Order SMS / Confirmation
+            {language === 'kn' ? 'ಆರ್ಡರ್ SMS / ದೃಢೀಕರಣ ನಮೂದಿಸಿ' : language === 'hi' ? 'ऑर्डर SMS / पुष्टिकरण चिपकाएं' : 'Paste Order SMS / Confirmation'}
           </button>
         </div>
       ) : (
