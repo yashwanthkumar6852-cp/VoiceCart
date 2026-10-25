@@ -7,6 +7,7 @@ import { CrossStoreMatcher } from './crossStoreMatcher';
 import { Product, StoreName } from '../types/product';
 import { FALLBACK_CATALOG } from '../data/fallbackCatalog';
 import { EXPANDED_SEED_CATALOG } from '../data/expandedSeedCatalog';
+import { MASSIVE_EXPANDED_CATALOG } from '../data/massiveCatalog';
 
 export interface IngestOptions {
   category?: string;
@@ -295,7 +296,7 @@ export class CatalogIngestService {
       earbuds: 'audio',
       smartwatches: 'smartwatches',
       laptops: 'laptops',
-      electronics: 'appliances',
+      electronics: 'electronics',
       fashion: 'fashion_men',
       footwear: 'footwear',
       beauty: 'beauty',
@@ -357,6 +358,20 @@ export class CatalogIngestService {
             byCategory[targetCat] = (byCategory[targetCat] || 0) + 1;
           }
         }
+      }
+    }
+
+    // Process massive expanded brand catalog (mobiles, laptops, fashion, shoes, electronics, appliances, home, beauty, etc.)
+    for (const prod of MASSIVE_EXPANDED_CATALOG) {
+      if (filterCategory && prod.category !== filterCategory) {
+        continue;
+      }
+      const saved = await catalogDb.upsertProduct(prod);
+      if (saved) {
+        total++;
+        byStore[prod.store] = (byStore[prod.store] || 0) + 1;
+        const cat = prod.category || 'general';
+        byCategory[cat] = (byCategory[cat] || 0) + 1;
       }
     }
 

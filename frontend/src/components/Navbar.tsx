@@ -18,7 +18,8 @@ import {
   Moon,
   Sun,
   Scale,
-  Heart
+  Heart,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -28,6 +29,7 @@ import { useVoice } from '../hooks/useVoice';
 import { commandRouter } from '../voice/commandRouter';
 import { actionDispatcher, DispatcherHandlers } from '../voice/dispatcher';
 import { voiceStore } from '../voice/voiceStore';
+import { ttsService } from '../voice/tts';
 import { CATEGORY_ITEMS } from './CategoryIconTabBar';
 
 export type TabType = 'home' | 'search' | 'cart' | 'orders' | 'settings';
@@ -136,6 +138,79 @@ export const Navbar: React.FC<Props> = ({
 
   const loginMenuRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
+  const notificationMenuRef = useRef<HTMLDivElement>(null);
+
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 'notif-1',
+      title: 'Order Out for Delivery 🚚',
+      message: 'iPhone 15 (128GB) is out for delivery. Arriving today by 9 PM!',
+      time: '15m ago',
+      unread: true,
+      route: '/orders',
+      icon: 'package',
+      color: '#3b82f6',
+      requiresAuth: true
+    },
+    {
+      id: 'notif-2',
+      title: 'Price Drop Alert 🔥',
+      message: 'Sony WH-CH720N dropped by ₹1,500 on Amazon & Flipkart.',
+      time: '1h ago',
+      unread: true,
+      route: '/deals',
+      icon: 'zap',
+      color: '#f59e0b',
+      requiresAuth: false
+    },
+    {
+      id: 'notif-3',
+      title: 'Festive Deals Activated ✨',
+      message: 'Extra 10% instant discount on electronics with ICICI & HDFC cards.',
+      time: '3h ago',
+      unread: false,
+      route: '/deals',
+      icon: 'sparkles',
+      color: '#8b5cf6',
+      requiresAuth: false
+    }
+  ]);
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
+  const handleNotificationClick = (item: (typeof notifications)[0]) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n))
+    );
+    setIsNotificationOpen(false);
+
+    if (item.requiresAuth && !isAuthenticated) {
+      if (onProtectedAction) {
+        onProtectedAction(
+          { type: 'NAVIGATE', payload: { path: item.route } } as any,
+          'Please log in to view your order updates.'
+        );
+      } else if (onOpenAuth) {
+        onOpenAuth('login', 'Please log in to view your order updates.');
+      } else if (onNavigate) {
+        onNavigate('/login');
+      }
+      return;
+    }
+
+    if (item.route === '/orders') {
+      if (onNavigate) onNavigate('/orders');
+      onTabChange('orders');
+    } else if (onNavigate) {
+      onNavigate(item.route);
+    }
+  };
+
+  const handleMarkAllRead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -145,6 +220,9 @@ export const Navbar: React.FC<Props> = ({
       }
       if (moreMenuRef.current && !moreMenuRef.current.contains(target)) {
         setIsMoreMenuOpen(false);
+      }
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(target)) {
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -157,29 +235,38 @@ export const Navbar: React.FC<Props> = ({
 
   const handleFinalTranscript = useCallback(
     async (transcript: string) => {
-      if (!transcript.trim()) return;
-      setSearchInput(transcript);
-      setVoiceTooltip(`Heard: "${transcript}"`);
-      setTimeout(() => setVoiceTooltip(null), 3000);
+      const clean = transcript.trim();
+      if (!clean) return;
+      ttsService.stop();
+      setSearchInput(clean);
+      setVoiceTooltip(`Heard: "${clean}"`);
+      setTimeout(() => setVoiceTooltip(null), 4000);
 
       if (voiceHandlers) {
         try {
           const currentContext = voiceStore.getContext();
           const targetLang: SupportedLanguage = language === 'auto' ? 'en' : language;
-          const commandResult = await commandRouter.route(transcript, currentContext, targetLang);
+          const commandResult = await commandRouter.route(clean, currentContext, targetLang);
 
-          if (commandResult.action === 'search') {
-            const queryToSearch = commandResult.params?.query || transcript;
-            if (onSearch) onSearch(queryToSearch, selectedCategory);
-          } else {
-            await actionDispatcher.dispatch(commandResult, voiceHandlers, transcript);
+          if (commandResult.action === 'stop') {
+            ttsService.stop();
+            return;
+          }
+
+          const dispatchResult = await actionDispatcher.dispatch(commandResult, voiceHandlers, clean);
+          const spoken = dispatchResult.spokenResponse || commandResult.reply;
+          if (spoken) {
+            const spokenLang = (commandResult.language && commandResult.language !== 'auto'
+              ? commandResult.language
+              : targetLang) as 'en' | 'hi' | 'kn';
+            ttsService.speak(spoken, spokenLang);
           }
         } catch (err) {
           console.error('Voice routing error in header:', err);
-          if (onSearch) onSearch(transcript, selectedCategory);
+          if (onSearch) onSearch(clean, selectedCategory);
         }
       } else if (onSearch) {
-        onSearch(transcript, selectedCategory);
+        onSearch(clean, selectedCategory);
       }
     },
     [voiceHandlers, language, onSearch, selectedCategory]
@@ -193,6 +280,9 @@ export const Navbar: React.FC<Props> = ({
   const isMicListening = voiceState === 'listening' || voiceState === 'recording_fallback';
 
   const handleToggleVoice = () => {
+    if (ttsService.isSpeaking()) {
+      ttsService.stop();
+    }
     if (isMicListening) {
       stopListening();
     } else {
@@ -278,7 +368,7 @@ export const Navbar: React.FC<Props> = ({
             gap: '16px'
           }}
         >
-          {/* 1. Left: VoiceCart Logo + Deliver to */}
+          {/* 1. Left: VoiceCart Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
             <div
               onClick={() => {
@@ -288,48 +378,53 @@ export const Navbar: React.FC<Props> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: '12px',
                 cursor: 'pointer'
               }}
               title="VoiceCart Home"
             >
               <div
                 style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#ffffff',
-                  boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)'
+                  overflow: 'hidden',
+                  background: 'rgba(37, 99, 235, 0.08)',
+                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+                  flexShrink: 0
                 }}
               >
-                <Mic size={20} color="#ffffff" strokeWidth={2.4} />
+                <img
+                  src="/logo.png"
+                  alt="VoiceCart"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
               </div>
               <div>
                 <div
                   style={{
-                    fontSize: '1.25rem',
-                    fontWeight: 800,
+                    fontSize: '1.28rem',
+                    fontWeight: 900,
                     color: 'var(--text-main)',
                     lineHeight: 1,
                     letterSpacing: '-0.3px'
                   }}
                 >
-                  Voice<span style={{ color: 'var(--primary)' }}>Cart</span>
+                  Voice<span style={{ color: '#2563eb' }}>Cart</span>
                 </div>
                 <div
                   style={{
-                    fontSize: '0.65rem',
+                    fontSize: '0.68rem',
                     color: 'var(--text-muted)',
                     fontWeight: 600,
                     letterSpacing: '0.2px',
-                    marginTop: '2px'
+                    marginTop: '3px'
                   }}
                 >
-                  {t.speakSearchShop}
+                  Speak · Search · Shop
                 </div>
               </div>
             </div>
@@ -432,6 +527,7 @@ export const Navbar: React.FC<Props> = ({
 
               {/* Microphone inside Search Bar */}
               <button
+                id="navbar-voice-mic-btn"
                 type="button"
                 onClick={handleToggleVoice}
                 title={isMicListening ? `${t.listeningPrompt}` : t.searchTooltip}
@@ -483,140 +579,280 @@ export const Navbar: React.FC<Props> = ({
           </div>
 
           {/* 3. Right Action Icons & Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-            {/* Language Switcher Pills */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px',
-                background: 'var(--bg-subtle)',
-                padding: '2px 4px',
-                borderRadius: '20px',
-                border: '1px solid var(--border-color)'
-              }}
-            >
-              <Globe size={13} color="var(--text-muted)" style={{ margin: '0 3px' }} />
-              {[
-                { code: 'en', label: 'English', short: 'EN' },
-                { code: 'hi', label: 'हिन्दी', short: 'HI' },
-                { code: 'kn', label: 'ಕನ್ನಡ', short: 'KN' }
-              ].map((l) => (
-                <button
-                  key={l.code}
-                  type="button"
-                  onClick={() => {
-                    onLanguageChange(l.code as SupportedLanguage);
-                    voiceStore.setLanguage(l.code as SupportedLanguage);
-                  }}
-                  title={l.label}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
+            {/* Notification Bell with Interactive Dropdown */}
+            <div ref={notificationMenuRef} style={{ position: 'relative' }}>
+              <div
+                onClick={() => setIsNotificationOpen((prev) => !prev)}
+                style={{
+                  position: 'relative',
+                  cursor: 'pointer',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: isNotificationOpen ? 'var(--primary, #2563eb)' : 'var(--text-secondary)',
+                  background: isNotificationOpen ? 'rgba(37, 99, 235, 0.1)' : 'transparent',
+                  transition: 'all 0.15s ease'
+                }}
+                title="Notifications"
+                onMouseEnter={(e) => {
+                  if (!isNotificationOpen) e.currentTarget.style.background = 'var(--bg-subtle, rgba(0,0,0,0.04))';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isNotificationOpen) e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '3px',
+                      right: '3px',
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      borderRadius: '50%',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      width: '16px',
+                      height: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+                    }}
+                  >
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+
+              {/* Notification Popover Dropdown */}
+              {isNotificationOpen && (
+                <div
                   style={{
-                    padding: '3px 7px',
-                    borderRadius: '14px',
-                    border: 'none',
-                    background: language === l.code ? 'var(--primary)' : 'transparent',
-                    color: language === l.code ? '#ffffff' : 'var(--text-muted)',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
+                    position: 'absolute',
+                    top: 'calc(100% + 10px)',
+                    right: '-40px',
+                    width: '340px',
+                    maxWidth: '92vw',
+                    background: 'var(--bg-card, #ffffff)',
+                    borderRadius: '16px',
+                    boxShadow: '0 16px 40px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08)',
+                    border: '1px solid var(--border-color, #e2e8f0)',
+                    zIndex: 1300,
+                    overflow: 'hidden',
+                    color: 'var(--text-main, #0f172a)',
+                    animation: 'fadeIn 0.15s ease'
                   }}
                 >
-                  {l.short}
-                </button>
-              ))}
-            </div>
+                  {/* Header */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '14px 16px',
+                      borderBottom: '1px solid var(--border-color, #f1f5f9)',
+                      background: 'var(--bg-card, #ffffff)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        Notifications
+                      </span>
+                      {unreadCount > 0 && (
+                        <span
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.12)',
+                            color: '#ef4444',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            padding: '2px 7px',
+                            borderRadius: '12px'
+                          }}
+                        >
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllRead}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#2563eb',
+                          fontSize: '0.76rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          padding: 0
+                        }}
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
 
-            {/* Theme Toggle Button */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="theme-toggle-btn"
-              title={theme === 'dark' ? t.lightMode : t.darkMode}
-              aria-label="Toggle Light and Dark Mode"
-              style={{
-                padding: '5px 10px',
-                borderRadius: '20px',
-                border: '1px solid var(--border-color)',
-                background: 'var(--bg-subtle)',
-                color: 'var(--text-main)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {theme === 'dark' ? (
-                <Sun size={15} color="#f59e0b" />
-              ) : (
-                <Moon size={15} color="#6366f1" />
+                  {/* List of Notifications */}
+                  <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
+                    {notifications.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleNotificationClick(item)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          background: item.unread ? 'rgba(99, 102, 241, 0.04)' : 'transparent',
+                          borderBottom: '1px solid var(--border-color, #f1f5f9)',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--bg-subtle, rgba(0,0,0,0.03))';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = item.unread
+                            ? 'rgba(99, 102, 241, 0.04)'
+                            : 'transparent';
+                        }}
+                      >
+                        {/* Icon with colored badge */}
+                        <div
+                          style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '10px',
+                            background: `${item.color}18`,
+                            color: item.color,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            marginTop: '2px'
+                          }}
+                        >
+                          {item.icon === 'package' ? (
+                            <Package size={18} />
+                          ) : item.icon === 'zap' ? (
+                            <Zap size={18} />
+                          ) : (
+                            <Sparkles size={18} />
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                            <span style={{ fontSize: '0.84rem', fontWeight: item.unread ? 700 : 600, color: 'var(--text-main)' }}>
+                              {item.title}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                              {item.time}
+                            </span>
+                          </div>
+                          <p
+                            style={{
+                              fontSize: '0.78rem',
+                              color: 'var(--text-secondary)',
+                              margin: '3px 0 0 0',
+                              lineHeight: 1.35
+                            }}
+                          >
+                            {item.message}
+                          </p>
+                        </div>
+
+                        {/* Unread indicator dot */}
+                        {item.unread && (
+                          <div
+                            style={{
+                              width: '7px',
+                              height: '7px',
+                              borderRadius: '50%',
+                              background: '#2563eb',
+                              flexShrink: 0,
+                              marginTop: '6px'
+                            }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer link to Orders */}
+                  <div
+                    onClick={() => {
+                      setIsNotificationOpen(false);
+                      if (onNavigate) onNavigate('/orders');
+                      onTabChange('orders');
+                    }}
+                    style={{
+                      padding: '11px 16px',
+                      textAlign: 'center',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      color: '#2563eb',
+                      background: 'var(--bg-subtle, #f8fafc)',
+                      cursor: 'pointer',
+                      borderTop: '1px solid var(--border-color, #e2e8f0)',
+                      transition: 'background 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(37, 99, 235, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'var(--bg-subtle, #f8fafc)';
+                    }}
+                  >
+                    View all orders & deliveries →
+                  </div>
+                </div>
               )}
-              <span className="theme-toggle-text" style={{ fontSize: '0.76rem' }}>
-                {theme === 'dark' ? t.lightMode : t.darkMode}
-              </span>
-            </button>
-
-            {/* Compare Link */}
-            <div
-              onClick={() => onTabChange('search')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                cursor: 'pointer',
-                fontSize: '0.84rem',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                padding: '4px 6px',
-                borderRadius: '6px',
-                transition: 'color 0.15s ease'
-              }}
-              title={t.compare}
-            >
-              <Scale size={16} color="var(--text-muted)" />
-              <span>{t.compare}</span>
             </div>
 
             {/* Cart Button */}
             <div
               onClick={handleCartClick}
               style={{
+                position: 'relative',
+                cursor: 'pointer',
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                fontSize: '0.84rem',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                padding: '4px 6px',
-                borderRadius: '6px',
-                transition: 'color 0.15s ease'
+                justifyContent: 'center',
+                color: 'var(--text-secondary)'
               }}
               title={t.cart}
             >
-              <div style={{ position: 'relative' }}>
-                <ShoppingCart size={18} color="var(--text-muted)" />
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '-7px',
-                    right: '-9px',
-                    background: 'var(--primary)',
-                    color: '#ffffff',
-                    borderRadius: '10px',
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    padding: '1px 5px',
-                    lineHeight: '14px'
-                  }}
-                >
-                  {cartCount > 0 ? cartCount : 0}
-                </span>
-              </div>
-              <span>{t.cart}</span>
+              <ShoppingCart size={20} />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '3px',
+                  right: '3px',
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  borderRadius: '50%',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  width: '16px',
+                  height: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {cartCount > 0 ? cartCount : 2}
+              </span>
             </div>
 
             {/* Profile Dropdown */}
@@ -626,38 +862,37 @@ export const Navbar: React.FC<Props> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: '8px',
                   cursor: 'pointer',
-                  fontSize: '0.84rem',
-                  fontWeight: 600,
-                  color: 'var(--text-main)',
-                  padding: '5px 8px',
+                  padding: '3px 6px',
                   borderRadius: '24px',
-                  background: 'var(--bg-subtle)',
-                  border: '1px solid var(--border-color)',
+                  background: 'transparent',
                   transition: 'background 0.15s ease'
                 }}
               >
                 <div
                   style={{
-                    width: '26px',
-                    height: '26px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
-                    background: 'var(--primary)',
-                    color: '#ffffff',
+                    background: '#e0e7ff',
+                    color: '#4f46e5',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.74rem',
-                    fontWeight: 700
+                    justifyContent: 'center'
                   }}
                 >
-                  {isAuthenticated ? displayName.charAt(0).toUpperCase() : 'Y'}
+                  <User size={18} />
                 </div>
-                <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {isAuthenticated ? `Hi, ${displayName.split(' ')[0]}` : 'Hi, Yashwanth'}
-                </span>
-                <ChevronDown size={13} color="var(--text-muted)" />
+                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: 1.15 }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {displayName}
+                  </span>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    Profile
+                  </span>
+                </div>
+                <ChevronDown size={14} color="var(--text-muted)" style={{ marginLeft: '2px' }} />
               </div>
 
               {/* Login / Profile Dropdown Popup */}

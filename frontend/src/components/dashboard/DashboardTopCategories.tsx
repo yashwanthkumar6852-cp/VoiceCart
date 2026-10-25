@@ -4,10 +4,17 @@ import { SupportedLanguage, translations } from '../../i18n/translations';
 
 interface Props {
   onSelectCategory: (categoryId: string) => void;
+  onNavigateRoute?: (route: string) => void;
+  onViewAllDeals?: () => void;
   language?: SupportedLanguage;
 }
 
-export const DashboardTopCategories: React.FC<Props> = ({ onSelectCategory, language = 'en' }) => {
+export const DashboardTopCategories: React.FC<Props> = ({
+  onSelectCategory,
+  onNavigateRoute,
+  onViewAllDeals,
+  language = 'en'
+}) => {
   const t = translations[language === 'hi' || language === 'kn' ? language : 'en'] || translations.en;
 
   const topCategories = [
@@ -56,16 +63,46 @@ export const DashboardTopCategories: React.FC<Props> = ({ onSelectCategory, lang
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '16px'
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+          gap: '8px'
         }}
       >
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-          {t.popularCategories}
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+            {t.popularCategories}
+          </h2>
+          {onNavigateRoute && (
+            <button
+              type="button"
+              onClick={() => onNavigateRoute('/categories')}
+              style={{
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '20px',
+                color: 'var(--primary)',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '3px 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <span>{language === 'kn' ? 'ಎಲ್ಲಾ 24+ ವರ್ಗಗಳು' : language === 'hi' ? 'सभी 24+ श्रेणियां' : 'All 24+ Categories'}</span>
+              <ArrowRight size={12} />
+            </button>
+          )}
+        </div>
 
         <button
           type="button"
-          onClick={() => onSelectCategory('all')}
+          onClick={() => {
+            if (onViewAllDeals) onViewAllDeals();
+            else if (onNavigateRoute) onNavigateRoute('/deals');
+            else onSelectCategory('all');
+          }}
           style={{
             background: 'none',
             border: 'none',

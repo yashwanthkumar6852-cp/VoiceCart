@@ -11,6 +11,7 @@
     "test": "npm --prefix backend test",
     "images:cache": "npm --prefix backend run images:cache",
     "catalog:ingest": "npm --prefix backend run catalog:ingest",
+    "catalog:seed": "npm --prefix backend run catalog:seed",
     "catalog:status": "npm --prefix backend run catalog:status",
     "catalog:refresh-prices": "npm --prefix backend run catalog:refresh-prices",
     "build": "npm --prefix backend run build && npm --prefix frontend run build"

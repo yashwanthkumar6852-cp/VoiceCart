@@ -1,27 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Mic,
-  MicOff,
-  Volume2,
-  RefreshCw,
-  ShoppingCart,
+  Bot,
   ArrowRight,
-  ExternalLink,
-  CheckCircle2,
+  Plus,
+  Minus,
+  Volume2,
+  VolumeX,
   Sparkles,
-  Award,
-  ChevronRight,
-  Layers
+  Loader2
 } from 'lucide-react';
 import { Product, CartItem, SearchResponse } from '../../types';
-import { SupportedLanguage, translations } from '../../i18n/translations';
+import { SupportedLanguage } from '../../i18n/translations';
 import { DispatcherHandlers } from '../../voice/dispatcher';
 import { useVoice } from '../../hooks/useVoice';
 import { voiceStore } from '../../voice/voiceStore';
 import { commandRouter } from '../../voice/commandRouter';
 import { actionDispatcher } from '../../voice/dispatcher';
-import { AudioWaveform } from '../AudioWaveform';
-import { ProductImage } from '../ProductImage';
+import { ttsService } from '../../voice/tts';
 
 interface Props {
   language: SupportedLanguage;
@@ -40,128 +36,201 @@ interface Props {
 
 export const DashboardRightSidebar: React.FC<Props> = ({
   language,
-  onLanguageChange,
   handlers,
-  searchResponse,
-  recommendedProduct,
-  selectedProduct,
   cart,
   onAddToCart,
-  onSelectProduct,
   onNavigateToCart,
-  onNavigateToComparison,
   onSearchPrompt
 }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [lastCommand, setLastCommand] = useState<string>('');
-  const [lastReply, setLastReply] = useState<string>('');
-  const [activeCompareStore, setActiveCompareStore] = useState<'all' | 'amazon' | 'flipkart' | 'meesho'>('all');
-  const t = translations[language === 'hi' || language === 'kn' ? language : 'en'] || translations.en;
+  const [quantities, setQuantities] = useState<Record<string, number>>({
+    'cart-demo-iphone15': 1,
+    'cart-demo-sony-headphones': 1
+  });
+
+  const [lastCommand, setLastCommand] = useState<string | null>(null);
+  const [assistantReply, setAssistantReply] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+
+  // Subscribe to central TTS speaking changes
+  useEffect(() => {
+    const unsub = ttsService.subscribe((speaking) => {
+      setIsSpeaking(speaking);
+    });
+    return unsub;
+  }, []);
+
+  // Auto Voice Command Detect state (Enabled by default as requested)
+  const [autoDetect, setAutoDetect] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('voicecart_auto_detect');
+      return stored !== 'false';
+    } catch {
+      return true;
+    }
+  });
 
   const langCode = language === 'kn' ? 'kn-IN' : language === 'hi' ? 'hi-IN' : 'en-IN';
+  const {
+    state: voiceState,
+    liveTranscript,
+    startListening,
+    stopListening,
+    setAutoListen
+  } = useVoice(
+    langCode,
+    (transcript: string) => {
+      processVoiceCommand(transcript);
+    },
+    { autoListen: autoDetect }
+  );
 
-  const speakWithBrowserTTS = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
+  const isListening = voiceState === 'listening';
+
+  // Automatically start continuous auto-listening on mount if enabled
+  useEffect(() => {
+    if (autoDetect) {
+      const timer = setTimeout(() => {
+        startListening();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [autoDetect, startListening]);
+
+  const handleToggleAutoDetect = (forceState?: boolean) => {
+    const nextState = forceState !== undefined ? forceState : !autoDetect;
+    setAutoDetect(nextState);
+    setAutoListen(nextState);
     try {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(true);
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = langCode;
-      utterance.rate = 1.0;
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      setIsSpeaking(false);
+      localStorage.setItem('voicecart_auto_detect', nextState ? 'true' : 'false');
+    } catch {}
+
+    if (nextState) {
+      ttsService.speak('Auto voice command detect enabled. You can speak commands anytime.', language as any);
+      startListening();
+    } else {
+      ttsService.stop();
+      stopListening();
     }
   };
 
-  const handleFinalTranscript = async (transcript: string) => {
-    if (!transcript.trim()) return;
-    setLastCommand(transcript);
-    setIsProcessing(true);
+  // Process voice command through NLP Router -> Action Dispatcher -> TTS Speech
+  const processVoiceCommand = useCallback(
+    async (input: string) => {
+      const cleanInput = input.trim();
+      if (!cleanInput) return;
 
-    try {
-      const currentContext = voiceStore.getContext();
-      const targetLang: SupportedLanguage = language === 'auto' ? 'en' : language;
-      const commandResult = await commandRouter.route(transcript, currentContext, targetLang);
-
-      if (commandResult.action === 'stop') {
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        setIsSpeaking(false);
-        stopListening();
-        setLastReply(commandResult.reply || 'Voice stopped.');
+      // Handle voice command to toggle auto detect
+      if (/\b(enable auto voice|turn on auto voice|start auto voice|enable auto detect|turn on auto detect|start auto detect)\b/i.test(cleanInput)) {
+        handleToggleAutoDetect(true);
+        return;
+      }
+      if (/\b(disable auto voice|turn off auto voice|stop auto voice|disable auto detect|turn off auto detect|stop auto detect)\b/i.test(cleanInput)) {
+        handleToggleAutoDetect(false);
         return;
       }
 
-      const dispatchResult = await actionDispatcher.dispatch(commandResult, handlers, transcript);
-      const spoken = dispatchResult.spokenResponse || commandResult.reply || 'Command processed.';
-      setLastReply(spoken);
-      speakWithBrowserTTS(spoken);
-    } catch (err: any) {
-      const errorMsg = 'Could not process that command. Please try again.';
-      setLastReply(errorMsg);
-      speakWithBrowserTTS(errorMsg);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+      // Barge-in: cancel any running speech synthesis
+      ttsService.stop();
+      setLastCommand(cleanInput);
+      setIsProcessing(true);
 
-  const {
-    state,
-    liveTranscript,
-    startListening,
-    stopListening
-  } = useVoice(langCode, handleFinalTranscript);
+      try {
+        const currentContext = voiceStore.getContext();
+        const targetLang: SupportedLanguage = language === 'auto' ? 'en' : language;
+        const commandResult = await commandRouter.route(cleanInput, currentContext, targetLang);
 
-  const isListening = state === 'listening';
+        // Handle voice STOP command
+        if (commandResult.action === 'stop') {
+          ttsService.stop();
+          setAssistantReply(commandResult.reply || 'Voice stopped.');
+          return;
+        }
+
+        const dispatchResult = await actionDispatcher.dispatch(commandResult, handlers, cleanInput);
+        const spoken = dispatchResult.spokenResponse || commandResult.reply || 'Command processed.';
+        setAssistantReply(spoken);
+
+        const spokenLang = (commandResult.language && commandResult.language !== 'auto'
+          ? commandResult.language
+          : targetLang) as 'en' | 'hi' | 'kn';
+
+        // Play voice response audio aloud
+        ttsService.speak(spoken, spokenLang);
+      } catch (err) {
+        console.error('Voice routing error in right sidebar:', err);
+        const fallbackReply = 'Sorry, I had trouble processing that voice command. Please try again.';
+        setAssistantReply(fallbackReply);
+        ttsService.speak(fallbackReply, 'en');
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [handlers, language, autoDetect]
+  );
 
   const handleToggleMic = () => {
+    if (isSpeaking) {
+      ttsService.stop();
+      return;
+    }
     if (isListening) {
       stopListening();
     } else {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        setIsSpeaking(false);
-      }
+      ttsService.stop();
       startListening();
     }
   };
 
-  // Sync with searchResponse reply
-  useEffect(() => {
-    if (searchResponse?.replyText) {
-      setLastReply(searchResponse.replyText);
+  const voicePrompts = [
+    'Show me best laptops under 60000',
+    'Compare iPhone 15 on Amazon, Flipkart',
+    'Find running shoes with good rating',
+    'Add headphones to cart',
+    "What's the order status?"
+  ];
+
+  // Default display items matching reference image
+  const defaultCartItems = [
+    {
+      id: 'cart-demo-iphone15',
+      title: 'iPhone 15 (128GB)',
+      price: 64999,
+      imageUrl: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'cart-demo-sony-headphones',
+      title: 'Sony WH-CH720N',
+      price: 8990,
+      imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop&q=80'
     }
-  }, [searchResponse?.replyText]);
+  ];
 
-  // Comparison product (prioritizes user-selected or top recommendation or fallback HP Pavilion)
-  const compareTarget: Product =
-    selectedProduct ||
-    recommendedProduct ||
-    (searchResponse?.products && searchResponse.products[0]) || {
-      productId: 'hp-pav-15',
-      title: 'HP Pavilion 15',
-      brand: 'HP',
-      price: 48990,
-      mrp: 69990,
-      discountPct: 30,
-      rating: 4.5,
-      ratingCount: 12400,
-      reviewCount: 12400,
-      imageUrl: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&auto=format&fit=crop&q=60',
-      store: 'amazon',
-      productUrl: '#',
-      affiliateUrl: '#',
-      deliveryDays: 2,
-      shippingFee: 0,
-      seller: 'Amazon Retail',
-      inStock: true
-    };
+  const updateQty = (id: string, delta: number) => {
+    setQuantities((prev) => {
+      const cur = prev[id] || 1;
+      const next = Math.max(1, cur + delta);
+      return { ...prev, [id]: next };
+    });
+  };
 
-  // Calculate cart total
-  const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  // If real cart has items, use real cart, otherwise display reference items
+  const hasRealItems = cart && cart.length > 0;
+  const displayCartItems = hasRealItems
+    ? cart.map((ci) => ({
+        id: ci.id || ci.product?.productId || 'cart-item',
+        title: ci.product?.title || 'Product',
+        price: ci.product?.price || ci.currentPrice || 0,
+        imageUrl: ci.product?.imageUrl || '',
+        quantity: ci.quantity
+      }))
+    : defaultCartItems.map((di) => ({
+        ...di,
+        quantity: quantities[di.id] || 1
+      }));
+
+  const totalAmount = displayCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalCount = displayCartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <aside
@@ -173,17 +242,17 @@ export const DashboardRightSidebar: React.FC<Props> = ({
         flexShrink: 0
       }}
     >
-      {/* 1. Voice Assistant Hub Card (Always Visible on Dashboard) */}
+      {/* 1. Voice Assistant Card (Dark sleek card matching reference image) */}
       <div
         style={{
-          background: 'var(--bg-card)',
+          background: '#0b1120',
           borderRadius: '20px',
-          padding: '20px',
-          boxShadow: 'var(--shadow-card)',
-          border: '1px solid var(--border-color)',
+          padding: '22px 20px',
+          boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
           display: 'flex',
           flexDirection: 'column',
-          position: 'relative'
+          color: '#ffffff'
         }}
       >
         {/* Header */}
@@ -195,109 +264,331 @@ export const DashboardRightSidebar: React.FC<Props> = ({
             marginBottom: '16px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
               style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                background: '#eff6ff',
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#2563eb'
+                overflow: 'hidden',
+                background: 'rgba(56, 189, 248, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                boxShadow: '0 0 12px rgba(56, 189, 248, 0.25)'
               }}
             >
-              <Mic size={16} />
+              <img
+                src="/logo.png"
+                alt="Voice Assistant"
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
             </div>
-            <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
-              {t.voiceAssistant}
-            </span>
+            <div>
+              <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#ffffff', lineHeight: 1.2 }}>
+                Voice Assistant
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                Ask me anything...
+              </div>
+            </div>
           </div>
 
-          <div
+          {/* Auto Voice Detect Toggle Button */}
+          <button
+            type="button"
+            id="toggle-auto-voice-btn"
+            onClick={() => handleToggleAutoDetect()}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              fontSize: '0.75rem',
+              fontSize: '0.74rem',
               fontWeight: 700,
-              color: '#059669',
-              background: '#ecfdf5',
-              padding: '3px 10px',
-              borderRadius: '12px'
+              color: autoDetect ? '#34d399' : '#94a3b8',
+              background: autoDetect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+              border: autoDetect ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(255, 255, 255, 0.12)',
+              padding: '4px 10px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              boxShadow: autoDetect ? '0 0 10px rgba(16, 185, 129, 0.25)' : 'none',
+              transition: 'all 0.2s ease'
             }}
+            title={autoDetect ? 'Auto Voice Detect is ON. Click to turn off.' : 'Auto Voice Detect is OFF. Click to turn on.'}
           >
             <span
               style={{
-                width: '6px',
-                height: '6px',
+                width: '7px',
+                height: '7px',
                 borderRadius: '50%',
-                background: '#10b981',
-                boxShadow: '0 0 6px #10b981'
+                background: autoDetect ? '#10b981' : '#64748b',
+                boxShadow: autoDetect ? '0 0 8px #10b981' : 'none'
               }}
             />
-            <span>Online</span>
-          </div>
+            <span>{autoDetect ? 'Auto: ON' : 'Auto: OFF'}</span>
+          </button>
         </div>
 
-        {/* Big Circular Glowing Microphone Button */}
+        {/* Hands-free Voice Detect Banner */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: autoDetect ? 'rgba(16, 185, 129, 0.12)' : 'rgba(30, 41, 59, 0.6)',
+            border: autoDetect ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '12px',
+            padding: '8px 12px',
+            marginBottom: '14px',
+            fontSize: '0.75rem',
+            color: autoDetect ? '#34d399' : '#94a3b8'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={14} color={autoDetect ? '#10b981' : '#38bdf8'} />
+            <span style={{ fontWeight: 600 }}>
+              {autoDetect ? 'Hands-Free Voice Detect Active' : 'Push-to-Talk Voice Mode'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleToggleAutoDetect()}
+            style={{
+              fontSize: '0.68rem',
+              background: autoDetect ? '#10b981' : '#334155',
+              color: '#ffffff',
+              border: 'none',
+              padding: '2px 8px',
+              borderRadius: '6px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            {autoDetect ? (isListening ? 'LISTENING' : 'READY') : 'ENABLE'}
+          </button>
+        </div>
+
+        {/* 5 Speech Prompts List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: assistantReply || isListening ? '14px' : '22px' }}>
+          {voicePrompts.map((prompt, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => processVoiceCommand(prompt)}
+              style={{
+                textAlign: 'left',
+                background: lastCommand === prompt ? 'rgba(56, 189, 248, 0.18)' : 'rgba(30, 41, 59, 0.7)',
+                border: lastCommand === prompt ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '10px',
+                padding: '9px 12px',
+                fontSize: '0.76rem',
+                color: lastCommand === prompt ? '#ffffff' : '#cbd5e1',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#1e293b';
+                e.currentTarget.style.borderColor = '#38bdf8';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                if (lastCommand !== prompt) {
+                  e.currentTarget.style.background = 'rgba(30, 41, 59, 0.7)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.color = '#cbd5e1';
+                }
+              }}
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+
+        {/* Live Listening Transcription Pill */}
+        {isListening && (
+          <div
+            style={{
+              background: 'rgba(16, 185, 129, 0.14)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '0.78rem',
+              color: '#34d399',
+              boxShadow: '0 0 14px rgba(16, 185, 129, 0.2)'
+            }}
+          >
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#10b981',
+                boxShadow: '0 0 8px #10b981',
+                animation: 'pulse 1s infinite'
+              }}
+            />
+            <span style={{ fontWeight: 600 }}>
+              {liveTranscript ? `Hearing: "${liveTranscript}"` : 'Listening... Speak now'}
+            </span>
+          </div>
+        )}
+
+        {/* Processing Indicator */}
+        {isProcessing && !isListening && (
+          <div
+            style={{
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '0.78rem',
+              color: '#38bdf8'
+            }}
+          >
+            <Loader2 size={16} className="animate-spin" />
+            <span>Processing your voice request...</span>
+          </div>
+        )}
+
+        {/* Voice Assistant Response Bubble */}
+        {assistantReply && !isProcessing && (
+          <div
+            style={{
+              background: 'rgba(15, 23, 42, 0.85)',
+              border: isSpeaking ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '14px',
+              padding: '12px 14px',
+              marginBottom: '18px',
+              boxShadow: isSpeaking
+                ? '0 0 20px rgba(56, 189, 248, 0.3)'
+                : '0 4px 14px rgba(0,0,0,0.25)',
+              transition: 'all 0.25s ease'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '8px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Bot size={15} color="#38bdf8" />
+                <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#38bdf8', letterSpacing: '0.3px' }}>
+                  {isSpeaking ? 'VoiceCart Speaking...' : 'VoiceCart Response'}
+                </span>
+              </div>
+
+              {isSpeaking ? (
+                <button
+                  type="button"
+                  onClick={() => ttsService.stop()}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.2)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: '#f87171',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    fontSize: '0.68rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <VolumeX size={12} />
+                  <span>Stop</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => ttsService.speak(assistantReply, language as any)}
+                  style={{
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    color: '#38bdf8',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    fontSize: '0.68rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Volume2 size={12} />
+                  <span>Replay</span>
+                </button>
+              )}
+            </div>
+
+            <div style={{ fontSize: '0.8rem', color: '#f1f5f9', lineHeight: 1.48 }}>
+              {assistantReply}
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic Waveform + Big Glowing Mic Button in Center */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '12px 0 16px 0'
+            paddingTop: '6px'
           }}
         >
-          {/* Concentric rings wrapper */}
           <div
             style={{
-              position: 'relative',
-              width: '110px',
-              height: '110px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: '14px',
+              width: '100%',
               marginBottom: '10px'
             }}
           >
-            {/* Outer animated ripple */}
-            <div
+            {/* Left Sound Wave */}
+            <svg
+              width="44"
+              height="24"
+              viewBox="0 0 44 24"
               style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                borderRadius: '50%',
-                background: isListening
-                  ? 'rgba(239, 68, 68, 0.15)'
-                  : 'rgba(99, 102, 241, 0.12)',
-                border: isListening
-                  ? '1px solid rgba(239, 68, 68, 0.3)'
-                  : '1px solid rgba(99, 102, 241, 0.25)',
-                animation: isListening ? 'pulse-ring 2s infinite ease-in-out' : 'none'
+                opacity: isListening || isSpeaking ? 1 : 0.65,
+                filter: isListening
+                  ? autoDetect
+                    ? 'drop-shadow(0 0 6px #10b981)'
+                    : 'drop-shadow(0 0 6px #ef4444)'
+                  : isSpeaking
+                  ? 'drop-shadow(0 0 6px #38bdf8)'
+                  : 'none',
+                transition: 'all 0.3s ease'
               }}
-            />
+            >
+              <path
+                d="M2,12 Q6,2 10,12 T18,12 T26,12 T34,12 T42,12"
+                fill="none"
+                stroke={isListening ? (autoDetect ? '#10b981' : '#ef4444') : '#38bdf8'}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
 
-            {/* Middle ripple */}
-            <div
-              style={{
-                position: 'absolute',
-                width: '84px',
-                height: '84px',
-                borderRadius: '50%',
-                background: isListening
-                  ? 'rgba(239, 68, 68, 0.25)'
-                  : 'rgba(99, 102, 241, 0.2)',
-                border: isListening
-                  ? '1px solid rgba(239, 68, 68, 0.4)'
-                  : '1px solid rgba(99, 102, 241, 0.35)'
-              }}
-            />
-
-            {/* Center Mic Button */}
+            {/* Circular Mic Button */}
             <button
+              id="right-sidebar-voice-mic-btn"
               type="button"
               onClick={handleToggleMic}
               style={{
@@ -305,12 +596,14 @@ export const DashboardRightSidebar: React.FC<Props> = ({
                 height: '64px',
                 borderRadius: '50%',
                 background: isListening
-                  ? 'linear-gradient(135deg, #ef4444, #dc2626)'
-                  : isProcessing
-                  ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                  ? autoDetect
+                    ? 'linear-gradient(135deg, #10b981, #059669)'
+                    : 'linear-gradient(135deg, #ef4444, #dc2626)'
                   : isSpeaking
-                  ? 'linear-gradient(135deg, #10b981, #059669)'
-                  : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  ? 'linear-gradient(135deg, #06b6d4, #0284c7)'
+                  : autoDetect
+                  ? 'linear-gradient(135deg, #059669, #0284c7)'
+                  : 'linear-gradient(135deg, #3b82f6, #2563eb)',
                 border: 'none',
                 color: '#ffffff',
                 display: 'flex',
@@ -318,171 +611,69 @@ export const DashboardRightSidebar: React.FC<Props> = ({
                 justifyContent: 'center',
                 cursor: 'pointer',
                 boxShadow: isListening
-                  ? '0 0 20px rgba(239, 68, 68, 0.5)'
-                  : '0 8px 20px rgba(79, 70, 229, 0.35)',
-                zIndex: 2,
-                transition: 'transform 0.15s ease'
+                  ? autoDetect
+                    ? '0 0 30px rgba(16, 185, 129, 0.75)'
+                    : '0 0 28px rgba(239, 68, 68, 0.7)'
+                  : isSpeaking
+                  ? '0 0 28px rgba(6, 182, 212, 0.7)'
+                  : autoDetect
+                  ? '0 0 22px rgba(16, 185, 129, 0.45), inset 0 0 10px rgba(255, 255, 255, 0.35)'
+                  : '0 0 25px rgba(37, 99, 235, 0.55), inset 0 0 10px rgba(255, 255, 255, 0.35)',
+                transition: 'transform 0.15s ease, box-shadow 0.25s ease'
               }}
               onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
               onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+              title={autoDetect ? (isListening ? 'Auto listening active. Click to pause.' : 'Auto detect paused. Click to listen.') : (isListening ? 'Listening. Click to stop.' : 'Click to speak')}
             >
-              {isListening ? (
-                <Mic size={28} className="mic-active-pulse" />
-              ) : isProcessing ? (
-                <RefreshCw size={26} className="mic-active-pulse" />
-              ) : isSpeaking ? (
-                <Volume2 size={28} />
+              {isSpeaking ? (
+                <Volume2 size={26} color="#ffffff" className="mic-active-pulse" />
               ) : (
-                <Mic size={28} />
+                <Mic size={26} color="#ffffff" className={isListening ? 'mic-active-pulse' : ''} />
               )}
             </button>
-          </div>
 
-          <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '2px' }}>
-            {isListening ? t.listening : isProcessing ? t.processing : isSpeaking ? `${t.appName} Speaking...` : t.tapToSpeak}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {isListening ? (liveTranscript ? `"${liveTranscript}"` : t.listeningPrompt) : t.tapToSpeak}
-          </div>
-
-          {/* Sound Wave Bars */}
-          <div style={{ margin: '12px 0 4px 0' }}>
-            <AudioWaveform isActive={isListening || isSpeaking} color={isListening ? '#ef4444' : isSpeaking ? '#10b981' : '#6366f1'} />
-          </div>
-        </div>
-
-        {/* Live Status Step List (Matching reference image) */}
-        <div
-          style={{
-            background: 'var(--bg-subtle)',
-            borderRadius: '12px',
-            padding: '12px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            marginBottom: '14px',
-            border: '1px solid var(--border-subtle)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.76rem' }}>
-            <div
+            {/* Right Sound Wave */}
+            <svg
+              width="44"
+              height="24"
+              viewBox="0 0 44 24"
               style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: isListening ? '#10b981' : '#cbd5e1'
-              }}
-            />
-            <span style={{ fontWeight: isListening ? 700 : 500, color: isListening ? 'var(--text-main)' : 'var(--text-muted)' }}>
-              {t.listening}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.76rem' }}>
-            <div
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: isProcessing ? '#f59e0b' : '#cbd5e1'
-              }}
-            />
-            <span style={{ fontWeight: isProcessing ? 700 : 500, color: isProcessing ? 'var(--text-main)' : 'var(--text-muted)' }}>
-              {t.processing}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.76rem' }}>
-            <div
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: searchResponse || lastReply ? '#10b981' : '#cbd5e1'
-              }}
-            />
-            <span style={{ fontWeight: searchResponse || lastReply ? 700 : 500, color: searchResponse || lastReply ? 'var(--text-main)' : 'var(--text-muted)' }}>
-              {t.showingResults}
-            </span>
-          </div>
-        </div>
-
-        {/* Command & Assistant Response Area */}
-        {(lastCommand || lastReply) && (
-          <div
-            style={{
-              background: '#eff6ff',
-              borderRadius: '12px',
-              padding: '12px',
-              border: '1px solid #dbeafe',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              marginBottom: '14px'
-            }}
-          >
-            {lastCommand && (
-              <div style={{ fontSize: '0.76rem', color: '#1e3a8a', lineHeight: 1.4 }}>
-                <span style={{ fontWeight: 700 }}>🗣️ You:</span> &quot;{lastCommand}&quot;
-              </div>
-            )}
-            {lastReply && (
-              <div style={{ fontSize: '0.76rem', color: '#047857', lineHeight: 1.4, fontWeight: 600 }}>
-                <span style={{ fontWeight: 700 }}>🤖 VoiceCart:</span> {lastReply}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Quick Voice Prompt Chips */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-            {t.trySaying}
-          </div>
-          {(language === 'kn' ? [
-            '50k ಒಳಗೆ ಉತ್ತಮ ಲ್ಯಾಪ್ಟಾಪ್',
-            '2000 ಒಳಗೆ boAt earbuds',
-            'iPhone 15 ಬೆಲೆ ಹೋಲಿಕೆ'
-          ] : language === 'hi' ? [
-            '50k के अंदर बेस्ट लैपटॉप',
-            '2000 के अंदर boAt ईयरबड्स',
-            'iPhone 15 कीमतें तुलना करो'
-          ] : [
-            'Show me the best laptops under 50k',
-            'Find boAt earbuds under 2000',
-            'Compare iPhone 15 prices'
-          ]).map((prompt, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onSearchPrompt(prompt)}
-              style={{
-                textAlign: 'left',
-                background: 'var(--bg-subtle)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '8px',
-                padding: '6px 10px',
-                fontSize: '0.75rem',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--primary)';
-                e.currentTarget.style.color = 'var(--primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
+                opacity: isListening || isSpeaking ? 1 : 0.65,
+                filter: isListening
+                  ? autoDetect
+                    ? 'drop-shadow(0 0 6px #10b981)'
+                    : 'drop-shadow(0 0 6px #ef4444)'
+                  : isSpeaking
+                  ? 'drop-shadow(0 0 6px #38bdf8)'
+                  : 'none',
+                transition: 'all 0.3s ease'
               }}
             >
-              &quot;{prompt}&quot;
-            </button>
-          ))}
+              <path
+                d="M2,12 Q6,22 10,12 T18,12 T26,12 T34,12 T42,12"
+                fill="none"
+                stroke={isListening ? (autoDetect ? '#10b981' : '#ef4444') : '#38bdf8'}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <span style={{ fontSize: '0.78rem', color: isSpeaking ? '#38bdf8' : isListening ? '#34d399' : '#94a3b8', fontWeight: 600 }}>
+            {isListening
+              ? (liveTranscript ? `Hearing: "${liveTranscript}"` : autoDetect ? '🟢 Auto detecting commands... Speak anytime' : 'Listening... Speak now')
+              : isSpeaking
+              ? 'VoiceCart Speaking... (Tap to stop)'
+              : isProcessing
+              ? 'Processing request...'
+              : autoDetect
+              ? '🟢 Auto detect ready (Speak anytime or tap)'
+              : 'Tap to speak'}
+          </span>
         </div>
       </div>
 
-      {/* 2. Product Comparison Card */}
+      {/* 2. Your Cart Card (Clean white card matching reference image) */}
       <div
         style={{
           background: 'var(--bg-card)',
@@ -494,288 +685,154 @@ export const DashboardRightSidebar: React.FC<Props> = ({
           flexDirection: 'column'
         }}
       >
+        {/* Header */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '12px'
+            marginBottom: '16px'
           }}
         >
-          <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
-            {t.crossStoreComparison}
-          </span>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+            Your Cart ({totalCount})
+          </h3>
+
           <button
             type="button"
-            onClick={() => onNavigateToComparison(compareTarget.productId)}
+            onClick={onNavigateToCart}
             style={{
               background: 'none',
               border: 'none',
-              color: 'var(--primary)',
-              fontSize: '0.75rem',
+              color: '#2563eb',
+              fontSize: '0.82rem',
               fontWeight: 700,
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '2px'
+              gap: '4px',
+              padding: '2px 4px'
             }}
           >
-            <span>{t.viewAllDeals}</span>
-            <ChevronRight size={14} />
+            <span>View All</span>
+            <ArrowRight size={13} />
           </button>
         </div>
 
-        {/* Store Tabs */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
-          <span
-            style={{
-              fontSize: '0.66rem',
-              fontWeight: 700,
-              background: '#fff7ed',
-              color: '#c2410c',
-              border: '1px solid #ffedd5',
-              padding: '3px 8px',
-              borderRadius: '6px'
-            }}
-          >
-            amazon
-          </span>
-          <span
-            style={{
-              fontSize: '0.66rem',
-              fontWeight: 700,
-              background: '#eff6ff',
-              color: '#1d4ed8',
-              border: '1px solid #dbeafe',
-              padding: '3px 8px',
-              borderRadius: '6px'
-            }}
-          >
-            Flipkart
-          </span>
-          <span
-            style={{
-              fontSize: '0.66rem',
-              fontWeight: 700,
-              background: '#fdf2f8',
-              color: '#be185d',
-              border: '1px solid #fce7f3',
-              padding: '3px 8px',
-              borderRadius: '6px'
-            }}
-          >
-            meesho
-          </span>
-        </div>
-
-        {/* Product Snippet */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            marginBottom: '14px',
-            paddingBottom: '12px',
-            borderBottom: '1px solid #f1f5f9'
-          }}
-        >
-          <div
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '8px',
-              background: '#f8fafc',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              flexShrink: 0
-            }}
-          >
-            <ProductImage
-              src={compareTarget.imageUrl}
-              alt={compareTarget.title}
-              store={compareTarget.store}
-              productId={compareTarget.productId}
-              style={{ maxHeight: '40px', maxWidth: '40px', objectFit: 'contain' }}
-            />
-          </div>
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+        {/* Cart Items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
+          {displayCartItems.map((item) => (
+            <div
+              key={item.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}
+            >
+              {/* Thumbnail */}
               <div
                 style={{
-                  fontSize: '0.86rem',
-                  fontWeight: 700,
-                  color: '#0f172a',
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '10px',
+                  background: 'var(--bg-subtle, #f8fafc)',
+                  border: '1px solid var(--border-color)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {compareTarget.title}
-              </div>
-              <span
-                style={{
-                  fontSize: '0.6rem',
-                  fontWeight: 700,
-                  background: '#ecfdf5',
-                  color: '#059669',
-                  padding: '1px 5px',
-                  borderRadius: '4px',
                   flexShrink: 0
                 }}
               >
-                Best Value
-              </span>
+                <img
+                  src={item.imageUrl}
+                  alt={item.title}
+                  style={{
+                    maxHeight: '100%',
+                    maxWidth: '100%',
+                    objectFit: 'contain'
+                  }}
+                />
+              </div>
+
+              {/* Title & Price */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    color: 'var(--text-main)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                  title={item.title}
+                >
+                  {item.title}
+                </div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
+                  ₹{item.price.toLocaleString('en-IN')}
+                </div>
+              </div>
+
+              {/* Quantity Stepper */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'var(--bg-subtle, #f1f5f9)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  padding: '2px 6px'
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => updateQty(item.id, -1)}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '2px'
+                  }}
+                >
+                  <Minus size={12} />
+                </button>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, minWidth: '14px', textAlign: 'center' }}>
+                  {item.quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => updateQty(item.id, 1)}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '2px'
+                  }}
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
             </div>
-            <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-              ★ {compareTarget.rating || 4.5} ({(compareTarget.ratingCount || 12400) > 1000 ? `${((compareTarget.ratingCount || 12400) / 1000).toFixed(1)}k` : compareTarget.ratingCount || 12400})
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Spec Comparison Table */}
-        <div
-          style={{
-            width: '100%',
-            fontSize: '0.72rem',
-            marginBottom: '16px'
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr 1fr 1fr',
-              padding: '6px 4px',
-              borderBottom: '1px solid #f8fafc',
-              fontWeight: 700,
-              color: '#94a3b8'
-            }}
-          >
-            <span>Metric</span>
-            <span style={{ color: '#c2410c' }}>Amazon</span>
-            <span style={{ color: '#1d4ed8' }}>Flipkart</span>
-            <span style={{ color: '#be185d' }}>Meesho</span>
-          </div>
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0 16px 0' }} />
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr 1fr 1fr',
-              padding: '6px 4px',
-              borderBottom: '1px solid #f8fafc',
-              fontWeight: 700,
-              color: '#0f172a'
-            }}
-          >
-            <span style={{ color: '#64748b' }}>Price</span>
-            <span>₹{compareTarget.price.toLocaleString('en-IN')}</span>
-            <span>₹{(compareTarget.price + 1000).toLocaleString('en-IN')}</span>
-            <span style={{ color: '#059669' }}>₹{(compareTarget.price - 1000).toLocaleString('en-IN')}</span>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr 1fr 1fr',
-              padding: '6px 4px',
-              borderBottom: '1px solid #f8fafc',
-              color: '#334155'
-            }}
-          >
-            <span style={{ color: '#64748b', fontWeight: 600 }}>Rating</span>
-            <span>4.5</span>
-            <span>4.3</span>
-            <span>4.2</span>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr 1fr 1fr',
-              padding: '6px 4px',
-              borderBottom: '1px solid #f8fafc',
-              color: '#334155'
-            }}
-          >
-            <span style={{ color: '#64748b', fontWeight: 600 }}>RAM</span>
-            <span>16GB</span>
-            <span>16GB</span>
-            <span>16GB</span>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr 1fr 1fr',
-              padding: '6px 4px',
-              borderBottom: '1px solid #f8fafc',
-              color: '#334155'
-            }}
-          >
-            <span style={{ color: '#64748b', fontWeight: 600 }}>Storage</span>
-            <span>512GB SSD</span>
-            <span>512GB SSD</span>
-            <span>512GB SSD</span>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr 1fr 1fr',
-              padding: '6px 4px',
-              color: '#334155'
-            }}
-          >
-            <span style={{ color: '#64748b', fontWeight: 600 }}>Display</span>
-            <span>15.6&quot; FHD</span>
-            <span>15.6&quot; FHD</span>
-            <span>15.6&quot; FHD</span>
-          </div>
-        </div>
-
-        {/* View Full Comparison Button */}
-        <button
-          type="button"
-          onClick={() => onNavigateToComparison(compareTarget.productId)}
-          style={{
-            width: '100%',
-            background: 'linear-gradient(135deg, #4f46e5, #4338ca)',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '9px 12px',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
-            transition: 'transform 0.15s ease'
-          }}
-          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.98)'; }}
-          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-        >
-          <span>View Full Comparison</span>
-          <ArrowRight size={14} />
-        </button>
-      </div>
-
-      {/* 3. Your Cart Summary Card (Matching reference image) */}
-      <div
-        style={{
-          background: 'var(--bg-card)',
-          borderRadius: '20px',
-          padding: '20px',
-          boxShadow: 'var(--shadow-card)',
-          border: '1px solid var(--border-color)',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
+        {/* Total & Checkout Button */}
         <div
           style={{
             display: 'flex',
@@ -784,103 +841,34 @@ export const DashboardRightSidebar: React.FC<Props> = ({
             marginBottom: '14px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShoppingCart size={18} color="var(--primary)" />
-            <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
-              {t.orderSummary}
-            </span>
-          </div>
-          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-            {cart.length > 0 ? `${cart.length} items` : `0 ${t.cart}`}
+          <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Total
+          </span>
+          <span style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-main)' }}>
+            ₹{totalAmount.toLocaleString('en-IN')}
           </span>
         </div>
 
-        {/* Cart Thumbnails & Total */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '16px'
-          }}
-        >
-          {/* Thumbnails Row */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {cart.length > 0 ? (
-              cart.slice(0, 3).map((item, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '8px',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <ProductImage
-                    src={item.product.imageUrl}
-                    alt={item.product.title}
-                    store={item.product.store}
-                    productId={item.product.productId}
-                    style={{ maxHeight: '36px', maxWidth: '36px', objectFit: 'contain' }}
-                  />
-                </div>
-              ))
-            ) : (
-              <>
-                <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                  💻
-                </div>
-                <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                  🎧
-                </div>
-                <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                  👟
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Cart Total */}
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t.totalAmount}</div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              ₹{cartTotal.toLocaleString('en-IN')}
-            </div>
-          </div>
-        </div>
-
-        {/* Go to Cart Button */}
         <button
           type="button"
           onClick={onNavigateToCart}
           style={{
             width: '100%',
-            background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+            background: '#4f46e5',
             color: '#ffffff',
             border: 'none',
-            borderRadius: '10px',
-            padding: '10px 14px',
-            fontSize: '0.82rem',
+            borderRadius: '12px',
+            padding: '12px',
+            fontSize: '0.88rem',
             fontWeight: 700,
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
-            transition: 'transform 0.15s ease'
+            boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)',
+            transition: 'background 0.15s ease'
           }}
-          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.98)'; }}
-          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#4338ca')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = '#4f46e5')}
         >
-          <span>{t.proceedToCheckout}</span>
-          <ArrowRight size={14} />
+          Go to Checkout
         </button>
       </div>
     </aside>

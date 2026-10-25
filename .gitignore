@@ -46,10 +46,10 @@ coverage/
 .gemini/
 
 # Local Database and Image Cache files
-data/
-**/data/
-data/images
-**/data/images/
+/data/
+/backend/data/
+/data/images
+/backend/data/images/
 *.db
 *.sqlite
 *.sqlite3

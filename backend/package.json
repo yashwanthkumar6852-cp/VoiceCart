@@ -18,6 +18,7 @@
     "auth:check": "ts-node src/scripts/authCheck.ts",
     "images:cache": "ts-node src/scripts/cacheImages.ts",
     "catalog:ingest": "ts-node src/scripts/catalogIngest.ts",
+    "catalog:seed": "ts-node src/scripts/importExpandedCatalog.ts",
     "catalog:status": "ts-node src/scripts/catalogStatus.ts",
     "catalog:refresh-prices": "ts-node src/scripts/catalogRefreshPrices.ts"
   },

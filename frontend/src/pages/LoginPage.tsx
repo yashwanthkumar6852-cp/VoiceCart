@@ -519,17 +519,21 @@ export const LoginPage: React.FC<Props> = ({
             >
               <div
                 style={{
-                  width: '52px',
-                  height: '52px',
+                  width: '54px',
+                  height: '54px',
                   borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #1877f2, #06b6d4)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 8px 24px rgba(24, 119, 242, 0.35)'
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(24, 119, 242, 0.25)'
                 }}
               >
-                <Sparkles size={28} color="#fff" />
+                <img
+                  src="/logo.png"
+                  alt="VoiceCart"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
               </div>
               <h1
                 style={{

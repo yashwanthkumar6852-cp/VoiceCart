@@ -454,7 +454,46 @@ export class CatalogDb {
     }
 
     if (params.category && params.category !== 'all') {
-      addCondition('category = $?', 'category = ?', params.category.toLowerCase());
+      const catLower = params.category.toLowerCase();
+      if (catLower === 'mobiles' || catLower === 'smartphones') {
+        conditions.push(`(category = 'mobiles')`);
+      } else if (catLower === 'laptops') {
+        conditions.push(`(category = 'laptops')`);
+      } else if (catLower === 'shoes' || catLower === 'footwear') {
+        conditions.push(`(category = 'shoes' OR category = 'footwear')`);
+      } else if (catLower === 'electronics') {
+        conditions.push(`(category IN ('electronics', 'audio', 'smartwatches', 'cameras', 'tablets', 'tvs'))`);
+      } else if (catLower === 'audio' || catLower === 'earbuds') {
+        conditions.push(`(category IN ('audio', 'earbuds'))`);
+      } else if (catLower === 'home_kitchen' || catLower === 'home_living' || catLower === 'home') {
+        conditions.push(`(category IN ('home_kitchen', 'home_living', 'furniture', 'home'))`);
+      } else if (catLower === 'furniture') {
+        conditions.push(`(category IN ('furniture', 'home_living'))`);
+      } else if (catLower === 'fashion') {
+        conditions.push(`(category IN ('fashion', 'fashion_men', 'fashion_women'))`);
+      } else if (catLower === 'fashion_men') {
+        conditions.push(`(category = 'fashion_men')`);
+      } else if (catLower === 'fashion_women') {
+        conditions.push(`(category = 'fashion_women')`);
+      } else if (catLower === 'appliances') {
+        conditions.push(`(category = 'appliances')`);
+      } else if (catLower === 'beauty') {
+        conditions.push(`(category = 'beauty')`);
+      } else if (catLower === 'bags' || catLower === 'luggage') {
+        conditions.push(`(category = 'bags')`);
+      } else if (catLower === 'toys' || catLower === 'toys_baby') {
+        conditions.push(`(category IN ('toys', 'toys_baby'))`);
+      } else if (catLower === 'kids') {
+        conditions.push(`(category = 'kids')`);
+      } else if (catLower === 'sports' || catLower === 'sports_fitness') {
+        conditions.push(`(category IN ('sports', 'sports_fitness'))`);
+      } else if (catLower === 'health' || catLower === 'food_health') {
+        conditions.push(`(category IN ('health', 'food_health'))`);
+      } else if (catLower === 'books_stationery' || catLower === 'books') {
+        conditions.push(`(category IN ('books_stationery', 'books'))`);
+      } else {
+        addCondition('category = $?', 'category = ?', catLower);
+      }
     }
 
     if (params.subCategory && params.subCategory !== 'all') {

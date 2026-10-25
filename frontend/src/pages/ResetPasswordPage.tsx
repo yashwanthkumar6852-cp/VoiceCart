@@ -82,16 +82,21 @@ export const ResetPasswordPage: React.FC<Props> = ({ onNavigate, language }) => 
         >
           <div
             style={{
-              width: '38px',
-              height: '38px',
+              width: '40px',
+              height: '40px',
               borderRadius: '10px',
-              background: 'linear-gradient(135deg, #1877f2, #06b6d4)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              overflow: 'hidden',
+              boxShadow: '0 4px 12px rgba(24, 119, 242, 0.25)'
             }}
           >
-            <Sparkles size={20} color="#fff" />
+            <img
+              src="/logo.png"
+              alt="VoiceCart"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
           </div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1877f2', margin: 0 }}>
             Voice<span style={{ color: '#06b6d4' }}>Cart</span>

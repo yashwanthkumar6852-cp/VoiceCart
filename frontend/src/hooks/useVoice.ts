@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
+import { ttsService } from '../voice/tts';
 
 export type VoiceState = 'idle' | 'listening' | 'recording_fallback' | 'processing' | 'error';
 export type VoiceMode = 'webspeech' | 'mediarecorder';
@@ -9,6 +10,10 @@ export interface VoiceError {
   message: string;
   userMessage: string;
   canRetry: boolean;
+}
+
+export interface UseVoiceOptions {
+  autoListen?: boolean;
 }
 
 const ERROR_MESSAGES: Record<string, Record<string, string>> = {
@@ -51,7 +56,8 @@ const ERROR_MESSAGES: Record<string, Record<string, string>> = {
 
 export const useVoice = (
   lang: string = 'en-IN',
-  onFinal?: (transcript: string, detectedLang?: string) => void
+  onFinal?: (transcript: string, detectedLang?: string) => void,
+  options?: UseVoiceOptions
 ) => {
   const [state, setState] = useState<VoiceState>('idle');
   const [mode, setMode] = useState<VoiceMode>('webspeech');
@@ -59,6 +65,18 @@ export const useVoice = (
   const [error, setError] = useState<VoiceError | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [suggestedQuery, setSuggestedQuery] = useState<{ text: string; lang: string } | null>(null);
+  const [autoListen, setAutoListenState] = useState<boolean>(() => options?.autoListen ?? false);
+
+  const autoListenRef = useRef(autoListen);
+  const userStoppedRef = useRef(false);
+  const autoRestartTimerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (options?.autoListen !== undefined) {
+      autoListenRef.current = options.autoListen;
+      setAutoListenState(options.autoListen);
+    }
+  }, [options?.autoListen]);
 
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -334,9 +352,11 @@ export const useVoice = (
       return;
     }
 
+    userStoppedRef.current = false;
+
     try {
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
+      recognition.continuous = !!autoListenRef.current;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognition.lang = normalizedLang;
@@ -364,7 +384,9 @@ export const useVoice = (
         setLiveTranscript(currentText);
 
         if (final && final.trim().length > 0) {
-          setState('processing');
+          if (!autoListenRef.current) {
+            setState('processing');
+          }
           if (onFinal) {
             onFinal(final.trim(), normalizedLang);
           }
@@ -382,6 +404,10 @@ export const useVoice = (
         }
 
         if (errorCode === 'no-speech') {
+          if (autoListenRef.current && !userStoppedRef.current) {
+            // Normal silence between utterances in auto voice detect mode
+            return;
+          }
           setState('error');
           setError({
             code: 'no-speech',
@@ -410,10 +436,19 @@ export const useVoice = (
       };
 
       recognition.onend = () => {
-        if (state === 'listening' && !liveTranscript) {
-          setState('idle');
-        }
         cleanupResources();
+        if (autoListenRef.current && !userStoppedRef.current && !ttsService.isSpeaking()) {
+          if (autoRestartTimerRef.current) clearTimeout(autoRestartTimerRef.current);
+          autoRestartTimerRef.current = setTimeout(() => {
+            if (autoListenRef.current && !userStoppedRef.current && !ttsService.isSpeaking()) {
+              startListening();
+            }
+          }, 350);
+        } else {
+          if (state === 'listening' && !liveTranscript) {
+            setState('idle');
+          }
+        }
       };
 
       recognitionRef.current = recognition;
@@ -425,6 +460,12 @@ export const useVoice = (
   }, [cleanupResources, getUserFriendlyMessage, normalizedLang, onFinal, setupAudioVisualizer, startMediaRecorderFallback, state, liveTranscript]);
 
   const stopListening = useCallback(() => {
+    userStoppedRef.current = true;
+    if (autoRestartTimerRef.current) {
+      clearTimeout(autoRestartTimerRef.current);
+      autoRestartTimerRef.current = null;
+    }
+
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -443,6 +484,45 @@ export const useVoice = (
     }
   }, [cleanupResources, state]);
 
+  const setAutoListen = useCallback((val: boolean) => {
+    autoListenRef.current = val;
+    setAutoListenState(val);
+    if (!val) {
+      userStoppedRef.current = true;
+      if (autoRestartTimerRef.current) {
+        clearTimeout(autoRestartTimerRef.current);
+        autoRestartTimerRef.current = null;
+      }
+      stopListening();
+    } else {
+      userStoppedRef.current = false;
+      setTimeout(() => startListening(), 150);
+    }
+  }, [startListening, stopListening]);
+
+  // Subscribe to TTS: pause listening while assistant speaks, resume afterwards if autoListen is on
+  useEffect(() => {
+    const unsub = ttsService.subscribe((isSpeaking) => {
+      if (isSpeaking) {
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.abort();
+          } catch {}
+        }
+      } else {
+        if (autoListenRef.current && !userStoppedRef.current) {
+          if (autoRestartTimerRef.current) clearTimeout(autoRestartTimerRef.current);
+          autoRestartTimerRef.current = setTimeout(() => {
+            if (autoListenRef.current && !userStoppedRef.current && !ttsService.isSpeaking()) {
+              startListening();
+            }
+          }, 400);
+        }
+      }
+    });
+    return unsub;
+  }, [startListening]);
+
   const resetState = useCallback(() => {
     cleanupResources();
     setState('idle');
@@ -458,6 +538,8 @@ export const useVoice = (
     error,
     audioLevel,
     suggestedQuery,
+    autoListen,
+    setAutoListen,
     startListening,
     stopListening,
     resetState,

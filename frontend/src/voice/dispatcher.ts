@@ -270,8 +270,8 @@ export class ActionDispatcher {
       const searchRes: any = await handlers.onSearch(query, filters);
       handlers.onNavigate('search');
 
-      let reply = searchRes?.replyText || '';
-      let spoken = searchRes?.spokenText || reply;
+      let reply = searchRes?.replyText || searchRes?.outcome?.writtenReply || '';
+      let spoken = searchRes?.spokenText || searchRes?.outcome?.spokenReply || reply;
 
       if (!reply) {
         const topPick =

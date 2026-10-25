@@ -25,6 +25,8 @@ import { OrdersListPage } from './pages/OrdersListPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
 import { ProductDetailsPage } from './pages/ProductDetailsPage';
 import { CrossStoreComparisonPage } from './pages/CrossStoreComparisonPage';
+import { CategoriesPage } from './pages/CategoriesPage';
+import { DealsPage } from './pages/DealsPage';
 import { LayoutGrid, List, X, Layers, CloudLightning } from 'lucide-react';
 import { CategoryIconTabBar } from './components/CategoryIconTabBar';
 import { VoiceAssistantHub } from './components/VoiceAssistantHub';
@@ -34,6 +36,7 @@ import { CategoryQuickStrip } from './components/dashboard/CategoryQuickStrip';
 import { DashboardFeaturedProducts } from './components/dashboard/DashboardFeaturedProducts';
 import { DashboardPromoBanner } from './components/dashboard/DashboardPromoBanner';
 import { DashboardTopCategories } from './components/dashboard/DashboardTopCategories';
+import { DashboardPopularBrands } from './components/dashboard/DashboardPopularBrands';
 import { DashboardRightSidebar } from './components/dashboard/DashboardRightSidebar';
 import { useAuth } from './context/AuthContext';
 import { PendingAuthAction } from './types/auth';
@@ -243,23 +246,52 @@ export const App: React.FC = () => {
     }
   }, [currentPath, isAuthenticated]);
 
-  const handleSelectCategory = (catId: string) => {
+  const handleSelectCategory = (catId: string, subCatId?: string) => {
+    if (catId === 'more') {
+      navigate('/categories');
+      return;
+    }
+
+    if (currentPath !== '/') {
+      navigate('/');
+    }
+
+    if (catId === 'all') {
+      setFeedCategory('all');
+      setFeedSubCategory('all');
+      setSelectedBrand('all');
+      setFeedPage(1);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('category');
+        url.searchParams.delete('subCategory');
+        window.history.replaceState({}, '', url.toString());
+      }
+      handleClearSearch();
+      return;
+    }
+
     const cleanCat = catId === 'for_you' || catId === 'for-you' || catId === 'deals' ? 'all' : catId;
     setFeedCategory(cleanCat);
-    setFeedSubCategory('all');
+    setFeedSubCategory(subCatId || 'all');
     setSelectedBrand('all');
     setFeedPage(1);
+
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
-      if (cleanCat === 'all') {
-        url.searchParams.delete('category');
+      url.searchParams.set('category', cleanCat);
+      if (subCatId) {
+        url.searchParams.set('subCategory', subCatId);
       } else {
-        url.searchParams.set('category', cleanCat);
+        url.searchParams.delete('subCategory');
       }
-      url.searchParams.delete('subCategory');
       window.history.replaceState({}, '', url.toString());
     }
-    loadDashboardFeed(cleanCat, false, 1, 'all', feedSort, 'all');
+
+    // Do NOT open or populate the search bar! Keep search bar clean and show category items directly on dashboard
+    setSearchQuery('');
+    setSearchResponse(null);
+    loadDashboardFeed(cleanCat, false, 1, subCatId || 'all', feedSort, 'all');
   };
 
   const loadDashboardFeed = useCallback(async (
@@ -936,6 +968,55 @@ export const App: React.FC = () => {
     );
   }
 
+  if (currentPath === '/categories') {
+    return (
+      <div className="app-container" style={{ fontFamily: language === 'kn' ? "'Noto Sans Kannada', 'Inter', sans-serif" : "'Inter', sans-serif" }}>
+        <Navbar
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            navigate('/');
+            setActiveTab(tab);
+          }}
+          {...commonNavbarProps}
+        />
+        <div className="page-body-container">
+          <CategoriesPage
+            onNavigateRoute={navigate}
+            onSelectCategory={(catId, subCatId) => {
+              navigate(`/?category=${encodeURIComponent(catId)}${subCatId ? `&subCategory=${encodeURIComponent(subCatId)}` : ''}`);
+              handleSelectCategory(catId, subCatId);
+            }}
+            language={language}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPath === '/deals' || currentPath === '/deals-offers') {
+    return (
+      <div className="app-container" style={{ fontFamily: language === 'kn' ? "'Noto Sans Kannada', 'Inter', sans-serif" : "'Inter', sans-serif" }}>
+        <Navbar
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            navigate('/');
+            setActiveTab(tab);
+          }}
+          {...commonNavbarProps}
+        />
+        <div className="page-body-container">
+          <DealsPage
+            onNavigateRoute={navigate}
+            onAddToCart={handleAddToCart}
+            onToggleCompare={handleToggleCompare}
+            language={language}
+            showToast={showToast}
+          />
+        </div>
+      </div>
+    );
+  }
+
   // MAIN DASHBOARD APPLICATION
   return (
     <div className="app-container" style={{ fontFamily: language === 'kn' ? "'Noto Sans Kannada', 'Inter', sans-serif" : "'Inter', sans-serif" }}>
@@ -1025,8 +1106,11 @@ export const App: React.FC = () => {
               selectedCategory={feedCategory}
               onSelectCategory={handleSelectCategory}
               language={language}
+              onLanguageChange={handleLanguageChange}
+              currentPath={currentPath}
               onStartVoice={() => {
-                const micBtn = document.querySelector('.header-search-container button[title*="voice"]') as HTMLButtonElement;
+                const micBtn = (document.getElementById('right-sidebar-voice-mic-btn') ||
+                  document.getElementById('navbar-voice-mic-btn')) as HTMLButtonElement | null;
                 if (micBtn) micBtn.click();
               }}
               onNavigateRoute={navigate}
@@ -1369,7 +1453,8 @@ export const App: React.FC = () => {
                   handleSearch(q);
                 }}
                 onStartVoice={() => {
-                  const micBtn = document.querySelector('.header-search-container button[title*="voice"]') as HTMLButtonElement | null;
+                  const micBtn = (document.getElementById('right-sidebar-voice-mic-btn') ||
+                    document.getElementById('navbar-voice-mic-btn')) as HTMLButtonElement | null;
                   if (micBtn) micBtn.click();
                 }}
               />
@@ -1378,12 +1463,15 @@ export const App: React.FC = () => {
               <CategoryQuickStrip
                 selectedCategory={feedCategory}
                 onSelectCategory={handleSelectCategory}
+                onNavigateRoute={navigate}
                 language={language}
               />
 
-              {/* 3. Featured Products Grid (4 Cards with Badges, Prices & Comparison) */}
+              {/* 3. Featured / Category Products Grid */}
               <DashboardFeaturedProducts
                 products={feedProducts}
+                category={feedCategory}
+                onResetCategory={() => handleSelectCategory('all')}
                 language={language}
                 onAddToCart={handleAddToCart}
                 onSelectProduct={(p) => {
@@ -1393,24 +1481,17 @@ export const App: React.FC = () => {
                 onNavigateRoute={navigate}
                 onToggleCompare={handleToggleCompare}
                 onViewAll={() => {
-                  setFeedCategory('all');
-                  loadDashboardFeed('all', true);
+                  navigate('/deals');
                 }}
               />
 
-              {/* 4. Special Offer Banner Strip */}
-              <DashboardPromoBanner
-                language={language}
-                onShopNow={() => {
-                  setFeedCategory('all');
-                  loadDashboardFeed('all', false, 1, 'all', 'cheapest');
+              {/* 4. Popular Brands */}
+              <DashboardPopularBrands
+                onSelectBrand={(brand) => {
+                  setSearchQuery(brand);
+                  handleSearch(brand);
                 }}
-              />
-
-              {/* 5. Top Categories Tiles */}
-              <DashboardTopCategories
-                language={language}
-                onSelectCategory={handleSelectCategory}
+                onViewAll={() => navigate('/categories')}
               />
             </div>
           )}
