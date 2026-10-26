@@ -285,7 +285,15 @@ export class AuthService {
     }
 
     if (!user.passwordHash) {
-      throw new Error('This account was created with Google or Phone OTP. Please log in using that method.');
+      if (password && password.length >= 6) {
+        // Auto-set password for phone user so they can log in seamlessly
+        const newHash = await bcrypt.hash(password, 12);
+        await dbClient.updateUserPassword(user.id, newHash);
+        user.passwordHash = newHash;
+        console.log(`🔑 [AUTH] Auto-linked initial password for user ${cleanInput}`);
+      } else {
+        throw new Error('This account was created with Google or Phone OTP. Please log in using that method.');
+      }
     }
 
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);

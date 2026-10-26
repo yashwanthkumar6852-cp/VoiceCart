@@ -576,7 +576,7 @@ export const VoiceMicButton: React.FC<Props> = ({
         {/* Large Floating Mic Button with Dynamic Pulse & Barge-in */}
         <button
           onClick={handleToggleMic}
-          className={state === 'listening' || state === 'recording_fallback' ? 'mic-active-pulse' : ''}
+          className={state === 'listening' || state === 'recording_fallback' ? 'voice-recording-glow mic-active-pulse' : ''}
           style={{
             width: '68px',
             height: '68px',
@@ -713,6 +713,8 @@ export const VoiceMicButton: React.FC<Props> = ({
       >
         <input
           type="text"
+          className="search-bar-input search-input"
+          data-search-bar="true"
           value={typedFallbackText}
           onChange={(e) => setTypedFallbackText(e.target.value)}
           placeholder={
@@ -730,7 +732,8 @@ export const VoiceMicButton: React.FC<Props> = ({
             border: '1px solid var(--border-color)',
             color: 'var(--text-main)',
             fontSize: '0.82rem',
-            outline: 'none'
+            outline: 'none',
+            caretColor: 'auto'
           }}
         />
         <button

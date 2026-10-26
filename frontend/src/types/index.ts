@@ -359,6 +359,7 @@ export interface CartItem {
 
 export type OrderStatus =
   | 'PLACED'
+  | 'CONFIRMED'
   | 'PACKED'
   | 'SHIPPED'
   | 'OUT_FOR_DELIVERY'
@@ -369,7 +370,10 @@ export type OrderStatus =
   | 'CREATED'
   | 'PENDING_VERIFICATION'
   | 'PAID'
-  | 'FAILED';
+  | 'FAILED'
+  | 'PENDING'
+  | 'ORDERED'
+  | 'REFUNDED';
 
 export interface OrderItem {
   id: string;
@@ -415,6 +419,8 @@ export interface OrderPaymentDetails {
   cardBrand?: string;
   cardLast4?: string;
   isDemo?: boolean;
+  paidOnlineBeforeDelivery?: boolean;
+  signature?: string;
   refundId?: string;
   refundStatus?: string;
   refundAmount?: number;
@@ -485,6 +491,9 @@ export interface OrderRecord {
   paymentId?: string;
   paymentOrderId?: string;
   paymentMethod?: string;
+  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' | string;
+  paidOnlineBeforeDelivery?: boolean;
+  isCodEligibleForPrePayment?: boolean;
   paymentMode?: 'test' | 'live';
   paidAt?: string;
   utrNumber?: string;

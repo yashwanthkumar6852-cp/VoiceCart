@@ -341,6 +341,15 @@ export const ProductRow: React.FC<ProductRowProps> = ({
           )}
         </div>
 
+        {/* Real Savings Callout Pill */}
+        {product.mrp > product.price && (
+          <div style={{ marginBottom: '6px' }}>
+            <span className="savings-callout-pill">
+              Save ₹{(product.mrp - product.price).toLocaleString('en-IN')}
+            </span>
+          </div>
+        )}
+
         {/* Real Offer Chips */}
         {product.offers && product.offers.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '8px' }}>

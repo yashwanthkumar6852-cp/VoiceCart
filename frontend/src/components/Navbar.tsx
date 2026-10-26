@@ -139,6 +139,8 @@ export const Navbar: React.FC<Props> = ({
   const loginMenuRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState([
@@ -223,6 +225,9 @@ export const Navbar: React.FC<Props> = ({
       }
       if (notificationMenuRef.current && !notificationMenuRef.current.contains(target)) {
         setIsNotificationOpen(false);
+      }
+      if (langMenuRef.current && !langMenuRef.current.contains(target)) {
+        setIsLangMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -336,7 +341,7 @@ export const Navbar: React.FC<Props> = ({
     onTabChange('cart');
   };
 
-  const displayName = profile?.full_name || (user?.email ? user.email.split('@')[0] : 'Yashwanth');
+  const displayName = profile?.full_name || (user?.email ? user.email.split('@')[0] : 'User');
 
   return (
     <>
@@ -347,10 +352,10 @@ export const Navbar: React.FC<Props> = ({
           left: 0,
           right: 0,
           zIndex: 1000,
-          background: 'var(--nav-bg)',
-          color: 'var(--text-main)',
-          borderBottom: '1px solid var(--border-color)',
-          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.05)',
+          background: '#0a1226',
+          color: '#ffffff',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           width: '100%',
@@ -359,16 +364,16 @@ export const Navbar: React.FC<Props> = ({
       >
         <div
           style={{
-            maxWidth: '1680px',
+            maxWidth: '1740px',
             margin: '0 auto',
-            padding: '10px 24px',
+            padding: '11px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '16px'
           }}
         >
-          {/* 1. Left: VoiceCart Logo */}
+          {/* 1. Left: VoiceCart Logo matching Reference */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
             <div
               onClick={() => {
@@ -379,20 +384,22 @@ export const Navbar: React.FC<Props> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                caretColor: 'transparent'
               }}
               title="VoiceCart Home"
             >
               <div
                 style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '12px',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  overflow: 'hidden',
-                  background: 'rgba(37, 99, 235, 0.08)',
+                  background: 'rgba(37, 99, 235, 0.15)',
                   boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
                   flexShrink: 0
                 }}
@@ -401,67 +408,50 @@ export const Navbar: React.FC<Props> = ({
                   src="/logo.png"
                   alt="VoiceCart"
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               </div>
-              <div>
+              <div style={{ userSelect: 'none', WebkitUserSelect: 'none', caretColor: 'transparent' }}>
                 <div
                   style={{
-                    fontSize: '1.28rem',
+                    fontSize: '1.32rem',
                     fontWeight: 900,
-                    color: 'var(--text-main)',
+                    color: '#ffffff',
                     lineHeight: 1,
-                    letterSpacing: '-0.3px'
+                    letterSpacing: '-0.3px',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    caretColor: 'transparent'
                   }}
                 >
-                  Voice<span style={{ color: '#2563eb' }}>Cart</span>
+                  VoiceCart
                 </div>
                 <div
+                  className="header-tagline"
                   style={{
                     fontSize: '0.68rem',
-                    color: 'var(--text-muted)',
+                    color: '#60a5fa',
                     fontWeight: 600,
-                    letterSpacing: '0.2px',
-                    marginTop: '3px'
+                    letterSpacing: '0.3px',
+                    marginTop: '3px',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    caretColor: 'transparent'
                   }}
                 >
                   Speak · Search · Shop
                 </div>
               </div>
             </div>
-
-            {/* Deliver To Location Capsule */}
-            <div
-              onClick={() => setIsLocationModalOpen(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                padding: '5px 10px',
-                borderRadius: '8px',
-                background: 'var(--bg-subtle)',
-                border: '1px solid var(--border-color)',
-                fontSize: '0.78rem',
-                color: 'var(--text-secondary)',
-                transition: 'border-color 0.15s ease'
-              }}
-              title={t.selectLocation}
-            >
-              <MapPin size={15} color="var(--primary)" />
-              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{t.deliverTo}</span>
-                <span style={{ fontWeight: 700, color: 'var(--text-main)', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {savedLocation ? `${savedLocation.city}` : t.selectLocation}
-                </span>
-              </div>
-            </div>
           </div>
 
-          {/* 2. Center: Search Bar Capsule */}
+          {/* 2. Center: Pure White Search Bar Capsule matching Reference */}
           <div
             className="header-search-container"
             style={{
-              flex: '1 1 440px',
+              flex: '1 1 500px',
               maxWidth: '680px',
               position: 'relative'
             }}
@@ -471,33 +461,37 @@ export const Navbar: React.FC<Props> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                height: '42px',
+                height: '44px',
                 borderRadius: '9999px',
-                background: 'var(--bg-subtle)',
-                border: isSearchFocused ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
-                boxShadow: isSearchFocused ? '0 0 0 3px var(--primary-glow)' : 'none',
+                background: '#ffffff',
+                border: isSearchFocused ? '1.5px solid #2563eb' : '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)',
                 overflow: 'hidden',
-                padding: '0 5px 0 14px',
+                padding: '0 5px 0 16px',
                 transition: 'all 0.15s ease'
               }}
             >
-              <Search size={17} color="var(--text-muted)" style={{ marginRight: '8px', flexShrink: 0 }} />
+              <Mic size={16} color="#64748b" style={{ marginRight: '10px', flexShrink: 0 }} />
               <input
                 type="text"
+                id="voicecart-main-search-input"
+                className="search-bar-input search-input voicecart-search-input"
+                data-search-bar="true"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
-                placeholder={t.searchPlaceholder}
+                placeholder='Try saying "iPhone 15" or "best laptop under 60000"'
                 style={{
                   flex: 1,
                   height: '100%',
                   border: 'none',
                   outline: 'none',
                   background: 'transparent',
-                  fontSize: '0.86rem',
-                  color: 'var(--text-main)',
-                  fontWeight: 500
+                  fontSize: '0.88rem',
+                  color: '#0f172a',
+                  fontWeight: 500,
+                  caretColor: 'auto'
                 }}
               />
 
@@ -511,7 +505,7 @@ export const Navbar: React.FC<Props> = ({
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: 'var(--text-muted)',
+                    color: '#64748b',
                     cursor: 'pointer',
                     padding: '5px',
                     display: 'flex',
@@ -535,15 +529,16 @@ export const Navbar: React.FC<Props> = ({
                   width: '34px',
                   height: '34px',
                   borderRadius: '50%',
-                  background: isMicListening ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  background: isMicListening ? '#ef4444' : '#2563eb',
                   border: 'none',
                   color: '#ffffff',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(79, 70, 229, 0.35)',
-                  transition: 'transform 0.15s ease'
+                  boxShadow: isMicListening ? '0 0 12px rgba(239, 68, 68, 0.6)' : '0 2px 8px rgba(37, 99, 235, 0.35)',
+                  transition: 'transform 0.15s ease',
+                  flexShrink: 0
                 }}
               >
                 <Mic size={16} className={isMicListening ? 'mic-active-pulse' : ''} />
@@ -558,18 +553,18 @@ export const Navbar: React.FC<Props> = ({
                   top: 'calc(100% + 6px)',
                   left: 0,
                   right: 0,
-                  background: 'var(--bg-card)',
-                  color: 'var(--text-main)',
+                  background: '#0f172a',
+                  color: '#ffffff',
                   padding: '8px 14px',
                   borderRadius: '12px',
-                  boxShadow: 'var(--shadow-card)',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
                   zIndex: 1100,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   fontSize: '0.84rem',
                   fontWeight: 600,
-                  border: isMicListening ? '2px solid var(--accent-rose)' : '1px solid var(--border-color)'
+                  border: isMicListening ? '2px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.15)'
                 }}
               >
                 {isMicListening && <Mic size={15} color="#ef4444" className="mic-active-pulse" />}
@@ -578,8 +573,116 @@ export const Navbar: React.FC<Props> = ({
             )}
           </div>
 
-          {/* 3. Right Action Icons & Controls */}
+          {/* 3. Right Action Icons & Controls matching Reference */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
+            {/* Language Selector Capsule */}
+            <div ref={langMenuRef} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setIsLangMenuOpen((prev) => !prev)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
+                  borderRadius: '9999px',
+                  padding: '6px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                }}
+              >
+                <Globe size={15} color="#94a3b8" />
+                <span>{language === 'kn' ? 'ಕನ್ನಡ' : language === 'hi' ? 'हिन्दी' : 'English'}</span>
+                <ChevronDown size={14} color="#94a3b8" />
+              </button>
+
+              {isLangMenuOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: 0,
+                    background: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '12px',
+                    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.4)',
+                    padding: '6px',
+                    zIndex: 1300,
+                    minWidth: '130px'
+                  }}
+                >
+                  {[
+                    { code: 'en', label: 'English' },
+                    { code: 'kn', label: 'ಕನ್ನಡ' },
+                    { code: 'hi', label: 'हिन्दी' }
+                  ].map((item) => (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => {
+                        onLanguageChange(item.code as SupportedLanguage);
+                        voiceStore.setLanguage(item.code as SupportedLanguage);
+                        setIsLangMenuOpen(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: language === item.code ? 'rgba(37, 99, 235, 0.25)' : 'transparent',
+                        color: language === item.code ? '#60a5fa' : '#f8fafc',
+                        fontSize: '0.82rem',
+                        fontWeight: language === item.code ? 700 : 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Theme Toggle Button (Sun & Moon) */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
+                borderRadius: '9999px',
+                padding: '6px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#ffffff',
+                cursor: 'pointer',
+                transition: 'background 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+            >
+              <Sun size={15} color={theme === 'light' ? '#f59e0b' : '#94a3b8'} />
+              <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.3)' }}>|</span>
+              <Moon size={15} color={theme === 'dark' ? '#38bdf8' : '#94a3b8'} />
+            </button>
+
             {/* Notification Bell with Interactive Dropdown */}
             <div ref={notificationMenuRef} style={{ position: 'relative' }}>
               <div
@@ -593,19 +696,19 @@ export const Navbar: React.FC<Props> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: isNotificationOpen ? 'var(--primary, #2563eb)' : 'var(--text-secondary)',
-                  background: isNotificationOpen ? 'rgba(37, 99, 235, 0.1)' : 'transparent',
+                  color: isNotificationOpen ? '#38bdf8' : '#ffffff',
+                  background: isNotificationOpen ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
                   transition: 'all 0.15s ease'
                 }}
                 title="Notifications"
                 onMouseEnter={(e) => {
-                  if (!isNotificationOpen) e.currentTarget.style.background = 'var(--bg-subtle, rgba(0,0,0,0.04))';
+                  if (!isNotificationOpen) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                 }}
                 onMouseLeave={(e) => {
                   if (!isNotificationOpen) e.currentTarget.style.background = 'transparent';
                 }}
               >
-                <Bell size={20} />
+                <Bell size={20} color={isNotificationOpen ? '#38bdf8' : '#ffffff'} />
                 {unreadCount > 0 && (
                   <span
                     style={{
@@ -829,16 +932,23 @@ export const Navbar: React.FC<Props> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'var(--text-secondary)'
+                color: '#ffffff',
+                transition: 'background 0.15s ease'
               }}
               title={t.cart}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
             >
-              <ShoppingCart size={20} />
+              <ShoppingCart size={20} color="#ffffff" />
               <span
                 style={{
                   position: 'absolute',
-                  top: '3px',
-                  right: '3px',
+                  top: '2px',
+                  right: '2px',
                   background: '#ef4444',
                   color: '#ffffff',
                   borderRadius: '50%',
@@ -848,51 +958,82 @@ export const Navbar: React.FC<Props> = ({
                   height: '16px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
                 }}
               >
                 {cartCount > 0 ? cartCount : 2}
               </span>
             </div>
 
-            {/* Profile Dropdown */}
+            {/* Profile Dropdown matching Reference */}
             <div ref={loginMenuRef} style={{ position: 'relative' }}>
               <div
                 onClick={() => setIsLoginMenuOpen((prev) => !prev)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '9px',
                   cursor: 'pointer',
-                  padding: '3px 6px',
+                  padding: '4px 8px',
                   borderRadius: '24px',
-                  background: 'transparent',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
                   transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
                 }}
               >
                 <div
                   style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '30px',
+                    height: '30px',
                     borderRadius: '50%',
-                    background: '#e0e7ff',
-                    color: '#4f46e5',
+                    background: !isAuthenticated ? 'rgba(37, 99, 235, 0.25)' : 'rgba(255, 255, 255, 0.15)',
+                    border: !isAuthenticated ? '1.5px solid rgba(37, 99, 235, 0.5)' : '1.5px solid rgba(255, 255, 255, 0.35)',
+                    color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}
                 >
-                  <User size={18} />
+                  <User size={16} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: 1.15 }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                    {displayName}
-                  </span>
-                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                    Profile
-                  </span>
+                  {!isAuthenticated ? (
+                    <>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ffffff' }}>
+                        {language === 'kn' ? 'ಲಾಗಿನ್' : language === 'hi' ? 'लॉग इन' : 'Login'}
+                      </span>
+                      <span style={{ fontSize: '0.67rem', color: '#94a3b8', fontWeight: 500 }}>
+                        {language === 'kn' ? 'ಸೈನ್ ಇನ್' : language === 'hi' ? 'साइन इन' : 'Sign in'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span
+                        style={{
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          color: '#ffffff',
+                          maxWidth: '120px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {displayName}
+                      </span>
+                      <span style={{ fontSize: '0.67rem', color: '#94a3b8', fontWeight: 500 }}>
+                        {language === 'kn' ? 'ಪ್ರೊಫೈಲ್' : language === 'hi' ? 'प्रोफ़ाइल' : 'Profile'}
+                      </span>
+                    </>
+                  )}
                 </div>
-                <ChevronDown size={14} color="var(--text-muted)" style={{ marginLeft: '2px' }} />
               </div>
 
               {/* Login / Profile Dropdown Popup */}
@@ -1153,6 +1294,9 @@ export const Navbar: React.FC<Props> = ({
             <Search size={16} color="var(--text-muted)" style={{ marginRight: '8px' }} />
             <input
               type="text"
+              id="voicecart-mobile-search-input"
+              className="search-bar-input search-input voicecart-search-input"
+              data-search-bar="true"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t.searchPlaceholder}
@@ -1162,7 +1306,8 @@ export const Navbar: React.FC<Props> = ({
                 outline: 'none',
                 background: 'transparent',
                 fontSize: '13px',
-                color: 'var(--text-main)'
+                color: 'var(--text-main)',
+                caretColor: 'auto'
               }}
             />
             <button

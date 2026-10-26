@@ -105,7 +105,7 @@ export const config = {
 
   // Direct UPI Configuration
   upi: {
-    id: process.env.UPI_ID || 'pay@voicecart',
-    payeeName: process.env.UPI_PAYEE_NAME || 'VoiceCart Official'
+    id: process.env.UPI_ID || '8660318787@ibl',
+    payeeName: process.env.UPI_PAYEE_NAME || 'VoiceCart'
   }
 };

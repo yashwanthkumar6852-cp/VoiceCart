@@ -209,8 +209,8 @@ router.get('/:id/receipt', requireAuth, async (req: AuthenticatedRequest, res: R
             <div>
               <div style="font-weight: 700; color: #64748b; margin-bottom: 4px; font-size: 11px; text-transform: uppercase;">Payment Details:</div>
               <div style="color: #0f172a; line-height: 1.4;">
-                Method: <strong>${order.paymentDetails?.method || order.paymentMethod || 'Instant Payment'}</strong><br/>
-                Status: <strong style="color: #16a34a;">${order.paymentDetails?.status || 'PAID'}</strong><br/>
+                Method: <strong>${order.paidOnlineBeforeDelivery ? `${order.paymentDetails?.method || order.paymentMethod} (Paid Online Pre-Delivery)` : (order.paymentDetails?.method || order.paymentMethod || 'Instant Payment')}</strong><br/>
+                Status: <strong style="color: #16a34a;">${order.paidOnlineBeforeDelivery ? 'PAID (Zero Cash Due on Delivery)' : (order.paymentDetails?.status || 'PAID')}</strong><br/>
                 Ref ID: <code>${order.paymentDetails?.paymentId || order.paymentId || 'N/A'}</code><br/>
                 Date: ${formattedDate}
               </div>

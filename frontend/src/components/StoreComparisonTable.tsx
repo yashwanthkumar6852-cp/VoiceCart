@@ -12,6 +12,16 @@ interface Props {
 export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeStatuses, language = 'en' }) => {
   const t = translations[language === 'hi' || language === 'kn' ? language : 'en'] || translations.en;
 
+  const availablePrices = comparisonMatrix
+    .filter((item) => item.available && item.lowestPrice && item.lowestPrice > 0)
+    .map((item) => item.lowestPrice as number);
+  const minPrice = availablePrices.length > 0 ? Math.min(...availablePrices) : null;
+
+  const fastestDeliveries = comparisonMatrix
+    .filter((item) => item.available && item.fastestDeliveryDays && item.fastestDeliveryDays > 0)
+    .map((item) => item.fastestDeliveryDays as number);
+  const minDeliveryDays = fastestDeliveries.length > 0 ? Math.min(...fastestDeliveries) : null;
+
   return (
     <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -38,10 +48,13 @@ export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeS
             {comparisonMatrix.map((item) => {
               const status = storeStatuses.find((s) => s.store === item.store);
               const isAvailable = item.available && item.lowestPrice;
+              const isLowest = isAvailable && minPrice !== null && item.lowestPrice === minPrice;
+              const isFastest = isAvailable && minDeliveryDays !== null && item.fastestDeliveryDays === minDeliveryDays;
 
               return (
                 <tr
                   key={item.store}
+                  className={isLowest ? 'comparison-winner-row' : ''}
                   style={{
                     borderBottom: '1px solid var(--border-subtle)',
                     fontSize: '0.88rem',
@@ -91,7 +104,28 @@ export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeS
                   </td>
 
                   <td style={{ padding: '12px', fontWeight: 700, color: isAvailable ? 'var(--accent-green)' : 'var(--text-dim)' }}>
-                    {isAvailable ? `₹${item.lowestPrice?.toLocaleString('en-IN')}` : '—'}
+                    {isAvailable ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>₹{item.lowestPrice?.toLocaleString('en-IN')}</span>
+                        {isLowest && (
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              fontWeight: 800,
+                              background: 'linear-gradient(135deg, #10b981, #059669)',
+                              color: '#ffffff',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              boxShadow: '0 2px 5px rgba(16, 185, 129, 0.35)'
+                            }}
+                          >
+                            Lowest
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      '—'
+                    )}
                   </td>
 
                   <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>
@@ -107,10 +141,27 @@ export const StoreComparisonTable: React.FC<Props> = ({ comparisonMatrix, storeS
 
                   <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>
                     {isAvailable ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={14} color="var(--secondary)" />
-                        {item.fastestDeliveryDays === 1 ? '1 Day' : `${item.fastestDeliveryDays} Days`}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={14} color="var(--secondary)" />
+                          {item.fastestDeliveryDays === 1 ? '1 Day' : `${item.fastestDeliveryDays} Days`}
+                        </span>
+                        {isFastest && (
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              fontWeight: 700,
+                              background: 'rgba(6, 182, 212, 0.15)',
+                              color: 'var(--secondary)',
+                              border: '1px solid var(--secondary)',
+                              padding: '1px 5px',
+                              borderRadius: '4px'
+                            }}
+                          >
+                            Fastest
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       '—'
                     )}

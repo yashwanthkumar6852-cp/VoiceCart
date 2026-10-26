@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Home,
   LayoutGrid,
@@ -6,15 +6,13 @@ import {
   Package,
   Navigation,
   Heart,
-  User,
-  Globe,
-  Sun,
-  Moon,
-  Mic
+  Mic,
+  Star,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { TabType } from '../Navbar';
 import { SupportedLanguage } from '../../i18n/translations';
-import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
   activeTab: TabType;
@@ -26,6 +24,7 @@ interface Props {
   currentPath?: string;
   language?: SupportedLanguage;
   onLanguageChange?: (lang: SupportedLanguage) => void;
+  onFilterChange?: (filters: any) => void;
 }
 
 export const DashboardLeftSidebar: React.FC<Props> = ({
@@ -37,9 +36,15 @@ export const DashboardLeftSidebar: React.FC<Props> = ({
   onNavigateRoute,
   currentPath = '/',
   language = 'en',
-  onLanguageChange
+  onFilterChange
 }) => {
-  const { theme, setTheme } = useTheme();
+  // Filters State
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [priceMax, setPriceMax] = useState<number>(200000);
+  const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
+  const [availability, setAvailability] = useState<string[]>(['in_stock']);
+  const [selectedDiscounts, setSelectedDiscounts] = useState<number[]>([]);
+  const [showAllBrands, setShowAllBrands] = useState(false);
 
   const mainNavItems = [
     { id: 'home', label: 'Home', icon: Home, route: '/' },
@@ -47,22 +52,70 @@ export const DashboardLeftSidebar: React.FC<Props> = ({
     { id: 'deals', label: 'Deals & Offers', icon: Tag, route: '/deals' },
     { id: 'orders', label: 'My Orders', icon: Package, route: '/orders' },
     { id: 'track', label: 'Track Order', icon: Navigation, route: '/orders' },
-    { id: 'wishlist', label: 'Wishlist', icon: Heart, route: '/account/wishlist' },
-    { id: 'profile', label: 'Profile', icon: User, route: '/account' }
+    { id: 'wishlist', label: 'Wishlist', icon: Heart, route: '/account/wishlist' }
   ];
 
-  const languagesList: { id: SupportedLanguage; label: string }[] = [
-    { id: 'en', label: 'English' },
-    { id: 'kn', label: 'ಕನ್ನಡ' },
-    { id: 'hi', label: 'हिन्दी' }
+  const brandOptions = [
+    'Apple',
+    'Samsung',
+    'OnePlus',
+    'Xiaomi',
+    'Realme',
+    'boAt',
+    'Sony',
+    'Asus',
+    'Nike'
   ];
+
+  const visibleBrands = showAllBrands ? brandOptions : brandOptions.slice(0, 5);
+
+  const toggleBrand = (b: string) => {
+    const next = selectedBrands.includes(b)
+      ? selectedBrands.filter((item) => item !== b)
+      : [...selectedBrands, b];
+    setSelectedBrands(next);
+    if (onFilterChange) onFilterChange({ brands: next, priceMax, selectedRatings, availability, selectedDiscounts });
+  };
+
+  const toggleRating = (r: number) => {
+    const next = selectedRatings.includes(r)
+      ? selectedRatings.filter((item) => item !== r)
+      : [...selectedRatings, r];
+    setSelectedRatings(next);
+    if (onFilterChange) onFilterChange({ brands: selectedBrands, priceMax, selectedRatings: next, availability, selectedDiscounts });
+  };
+
+  const toggleDiscount = (d: number) => {
+    const next = selectedDiscounts.includes(d)
+      ? selectedDiscounts.filter((item) => item !== d)
+      : [...selectedDiscounts, d];
+    setSelectedDiscounts(next);
+    if (onFilterChange) onFilterChange({ brands: selectedBrands, priceMax, selectedRatings, availability, selectedDiscounts: next });
+  };
+
+  const toggleAvailability = (a: string) => {
+    const next = availability.includes(a)
+      ? availability.filter((item) => item !== a)
+      : [...availability, a];
+    setAvailability(next);
+    if (onFilterChange) onFilterChange({ brands: selectedBrands, priceMax, selectedRatings, availability: next, selectedDiscounts });
+  };
+
+  const handleClearAll = () => {
+    setSelectedBrands([]);
+    setPriceMax(200000);
+    setSelectedRatings([]);
+    setAvailability([]);
+    setSelectedDiscounts([]);
+    if (onFilterChange) onFilterChange({});
+  };
 
   return (
     <aside
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
+        gap: '18px',
         width: '100%',
         flexShrink: 0
       }}
@@ -70,14 +123,14 @@ export const DashboardLeftSidebar: React.FC<Props> = ({
       {/* 1. Main Navigation Menu Card */}
       <nav
         style={{
-          background: 'var(--bg-card)',
-          borderRadius: '20px',
-          padding: '16px 14px',
-          boxShadow: 'var(--shadow-card)',
-          border: '1px solid var(--border-color)',
+          background: 'var(--bg-card, #ffffff)',
+          borderRadius: '18px',
+          padding: '12px 10px',
+          boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.04))',
+          border: '1px solid var(--border-color, #e2e8f0)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '6px'
+          gap: '4px'
         }}
       >
         {mainNavItems.map((item) => {
@@ -88,9 +141,8 @@ export const DashboardLeftSidebar: React.FC<Props> = ({
           const isOrders = item.id === 'orders' && (currentPath === '/orders' || activeTab === 'orders');
           const isTrack = item.id === 'track' && currentPath.includes('/orders');
           const isWishlist = item.id === 'wishlist' && currentPath.includes('wishlist');
-          const isProfile = item.id === 'profile' && (currentPath === '/account' || currentPath.startsWith('/account/') || activeTab === 'settings');
 
-          const isActive = isHome || isCategories || isDeals || isOrders || isTrack || isWishlist || isProfile;
+          const isActive = isHome || isCategories || isDeals || isOrders || isTrack || isWishlist;
 
           return (
             <button
@@ -108,7 +160,7 @@ export const DashboardLeftSidebar: React.FC<Props> = ({
                 } else if (item.id === 'orders' || item.id === 'track') {
                   if (onNavigateRoute) onNavigateRoute('/orders');
                   else onTabChange('orders');
-                } else if (item.id === 'profile' || item.id === 'wishlist') {
+                } else if (item.id === 'wishlist') {
                   if (onNavigateRoute) onNavigateRoute('/account');
                   else onTabChange('settings');
                 }
@@ -116,16 +168,16 @@ export const DashboardLeftSidebar: React.FC<Props> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '14px',
+                gap: '12px',
                 width: '100%',
-                padding: '11px 16px',
+                padding: '10px 14px',
                 borderRadius: '12px',
                 border: 'none',
                 background: isActive
-                  ? 'rgba(99, 102, 241, 0.12)'
+                  ? 'rgba(37, 99, 235, 0.09)'
                   : 'transparent',
-                color: isActive ? '#4f46e5' : 'var(--text-secondary)',
-                fontSize: '0.9rem',
+                color: isActive ? '#2563eb' : 'var(--text-secondary, #475569)',
+                fontSize: '0.88rem',
                 fontWeight: isActive ? 700 : 500,
                 cursor: 'pointer',
                 textAlign: 'left',
@@ -133,75 +185,195 @@ export const DashboardLeftSidebar: React.FC<Props> = ({
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.background = 'var(--bg-subtle)';
+                  e.currentTarget.style.background = 'var(--bg-subtle, #f8fafc)';
                   e.currentTarget.style.color = 'var(--text-main)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.color = 'var(--text-secondary, #475569)';
                 }
               }}
             >
-              <Icon size={19} color={isActive ? '#4f46e5' : 'var(--text-muted)'} strokeWidth={isActive ? 2.4 : 1.8} />
+              <Icon size={18} color={isActive ? '#2563eb' : 'var(--text-muted, #94a3b8)'} strokeWidth={isActive ? 2.4 : 1.8} />
               <span>{item.label}</span>
             </button>
           );
         })}
+      </nav>
 
-        {/* Divider */}
-        <div style={{ height: '1px', background: 'var(--border-color)', margin: '10px 4px' }} />
-
-        {/* 2. Languages Section */}
-        <div style={{ padding: '0 8px 6px 8px' }}>
-          <div
+      {/* 2. Filters Card */}
+      <div
+        style={{
+          background: 'var(--bg-card, #ffffff)',
+          borderRadius: '18px',
+          padding: '18px 16px',
+          boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.04))',
+          border: '1px solid var(--border-color, #e2e8f0)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}
+      >
+        {/* Header: Filters + Clear All */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-main, #0f172a)', margin: 0 }}>
+            Filters
+          </h3>
+          <button
+            type="button"
+            onClick={handleClearAll}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '0.84rem',
+              background: 'none',
+              border: 'none',
+              color: '#2563eb',
+              fontSize: '0.78rem',
               fontWeight: 700,
-              color: 'var(--text-main)',
-              marginBottom: '12px'
+              cursor: 'pointer',
+              padding: '2px 4px'
             }}
           >
-            <Globe size={16} color="var(--text-muted)" />
-            <span>Languages</span>
-          </div>
+            Clear All
+          </button>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingLeft: '4px' }}>
-            {languagesList.map((lang) => {
-              const isChecked = language === lang.id;
+        {/* Filter Section: Brand */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main, #0f172a)' }}>
+              Brand
+            </span>
+            <ChevronUp size={14} color="#94a3b8" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {visibleBrands.map((brand) => {
+              const isChecked = selectedBrands.includes(brand);
               return (
                 <label
-                  key={lang.id}
-                  onClick={() => {
-                    if (onLanguageChange) onLanguageChange(lang.id);
-                  }}
+                  key={brand}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    fontSize: '0.86rem',
-                    color: isChecked ? 'var(--text-main)' : 'var(--text-secondary)',
+                    gap: '8px',
+                    fontSize: '0.8rem',
+                    color: isChecked ? 'var(--text-main, #0f172a)' : 'var(--text-secondary, #64748b)',
                     fontWeight: isChecked ? 600 : 400,
                     cursor: 'pointer',
                     userSelect: 'none'
                   }}
                 >
-                  <div
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleBrand(brand)}
                     style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '50%',
-                      border: isChecked ? '5px solid #4f46e5' : '1.5px solid var(--border-color)',
-                      background: isChecked ? '#ffffff' : 'transparent',
-                      transition: 'all 0.15s ease',
-                      flexShrink: 0
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '3px',
+                      accentColor: '#2563eb',
+                      cursor: 'pointer'
                     }}
                   />
-                  <span>{lang.label}</span>
+                  <span>{brand}</span>
+                </label>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setShowAllBrands(!showAllBrands)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#2563eb',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                textAlign: 'left',
+                cursor: 'pointer',
+                padding: '2px 0',
+                marginTop: '2px'
+              }}
+            >
+              {showAllBrands ? '- Less' : '+ More'}
+            </button>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'var(--border-color, #e2e8f0)' }} />
+
+        {/* Filter Section: Price Range */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main, #0f172a)' }}>
+              Price Range
+            </span>
+            <ChevronUp size={14} color="#94a3b8" />
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="200000"
+            step="2000"
+            value={priceMax}
+            onChange={(e) => setPriceMax(Number(e.target.value))}
+            style={{
+              width: '100%',
+              accentColor: '#2563eb',
+              cursor: 'pointer',
+              marginBottom: '4px'
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>
+            <span>₹0</span>
+            <span>₹{priceMax.toLocaleString('en-IN')}{priceMax >= 200000 ? '+' : ''}</span>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'var(--border-color, #e2e8f0)' }} />
+
+        {/* Filter Section: Rating */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main, #0f172a)' }}>
+              Rating
+            </span>
+            <ChevronUp size={14} color="#94a3b8" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {[4, 3, 2].map((stars) => {
+              const isChecked = selectedRatings.includes(stars);
+              return (
+                <label
+                  key={stars}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '0.8rem',
+                    color: isChecked ? 'var(--text-main, #0f172a)' : 'var(--text-secondary, #64748b)',
+                    fontWeight: isChecked ? 600 : 400,
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleRating(stars)}
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '3px',
+                      accentColor: '#2563eb',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <span style={{ color: '#eab308' }}>★</span>
+                    <span>{stars} &amp; above</span>
+                  </div>
                 </label>
               );
             })}
@@ -209,169 +381,187 @@ export const DashboardLeftSidebar: React.FC<Props> = ({
         </div>
 
         {/* Divider */}
-        <div style={{ height: '1px', background: 'var(--border-color)', margin: '10px 4px' }} />
+        <div style={{ height: '1px', background: 'var(--border-color, #e2e8f0)' }} />
 
-        {/* 3. Theme Section */}
-        <div style={{ padding: '0 8px 6px 8px' }}>
-          <div
-            style={{
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              color: 'var(--text-main)',
-              marginBottom: '10px'
-            }}
-          >
-            Theme
+        {/* Filter Section: Availability */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main, #0f172a)' }}>
+              Availability
+            </span>
+            <ChevronUp size={14} color="#94a3b8" />
           </div>
-
-          <div
-            style={{
-              display: 'flex',
-              background: 'var(--bg-subtle, #f1f5f9)',
-              borderRadius: '12px',
-              padding: '4px',
-              border: '1px solid var(--border-color)'
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setTheme('light')}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                padding: '7px 0',
-                borderRadius: '8px',
-                border: 'none',
-                background: theme === 'light' ? 'var(--bg-card, #ffffff)' : 'transparent',
-                color: theme === 'light' ? 'var(--text-main)' : 'var(--text-muted)',
-                boxShadow: theme === 'light' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                fontSize: '0.8rem',
-                fontWeight: theme === 'light' ? 700 : 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Sun size={14} color={theme === 'light' ? '#4f46e5' : 'currentColor'} />
-              <span>Light</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTheme('dark')}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                padding: '7px 0',
-                borderRadius: '8px',
-                border: 'none',
-                background: theme === 'dark' ? 'var(--bg-card, #ffffff)' : 'transparent',
-                color: theme === 'dark' ? 'var(--text-main)' : 'var(--text-muted)',
-                boxShadow: theme === 'dark' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                fontSize: '0.8rem',
-                fontWeight: theme === 'dark' ? 700 : 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Moon size={14} color={theme === 'dark' ? '#6366f1' : 'currentColor'} />
-              <span>Dark</span>
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {[
+              { id: 'in_stock', label: 'In Stock' },
+              { id: 'out_of_stock', label: 'Out of Stock' }
+            ].map((avail) => {
+              const isChecked = availability.includes(avail.id);
+              return (
+                <label
+                  key={avail.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '0.8rem',
+                    color: isChecked ? 'var(--text-main, #0f172a)' : 'var(--text-secondary, #64748b)',
+                    fontWeight: isChecked ? 600 : 400,
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleAvailability(avail.id)}
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '3px',
+                      accentColor: '#2563eb',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <span>{avail.label}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
-      </nav>
 
-      {/* 4. Bottom Voice Shopping Promo Card */}
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'var(--border-color, #e2e8f0)' }} />
+
+        {/* Filter Section: Discount */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main, #0f172a)' }}>
+              Discount
+            </span>
+            <ChevronDown size={14} color="#94a3b8" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {[10, 20, 30].map((disc) => {
+              const isChecked = selectedDiscounts.includes(disc);
+              return (
+                <label
+                  key={disc}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '0.8rem',
+                    color: isChecked ? 'var(--text-main, #0f172a)' : 'var(--text-secondary, #64748b)',
+                    fontWeight: isChecked ? 600 : 400,
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleDiscount(disc)}
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '3px',
+                      accentColor: '#2563eb',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <span>{disc}% and above</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Bottom Voice Shopping Promo Card */}
       <div
         onClick={onStartVoice}
         style={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 55%, #312e81 100%)',
-          borderRadius: '20px',
-          padding: '24px 20px',
+          background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)',
+          borderRadius: '18px',
+          padding: '20px 18px',
           color: '#ffffff',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 12px 28px -6px rgba(30, 27, 75, 0.4)',
+          boxShadow: '0 10px 25px -4px rgba(37, 99, 235, 0.4)',
           cursor: 'pointer',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-          border: '1px solid rgba(129, 140, 248, 0.2)'
+          border: '1px solid rgba(255, 255, 255, 0.2)'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 16px 32px -6px rgba(30, 27, 75, 0.5)';
+          e.currentTarget.style.boxShadow = '0 14px 28px -4px rgba(37, 99, 235, 0.5)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(30, 27, 75, 0.4)';
+          e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(37, 99, 235, 0.4)';
         }}
       >
-        {/* Glow circle */}
+        {/* Glow circle background */}
         <div
           style={{
             position: 'absolute',
-            top: '-20px',
-            right: '-20px',
-            width: '100px',
-            height: '100px',
+            top: '-25px',
+            right: '-25px',
+            width: '90px',
+            height: '90px',
             borderRadius: '50%',
-            background: 'rgba(56, 189, 248, 0.25)',
-            filter: 'blur(25px)',
+            background: 'rgba(255, 255, 255, 0.2)',
+            filter: 'blur(20px)',
             pointerEvents: 'none'
           }}
         />
 
-        <div style={{ position: 'relative', zIndex: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', zIndex: 2 }}>
           {/* Glowing Mic Circle */}
           <div
             style={{
-              width: '46px',
-              height: '46px',
+              width: '42px',
+              height: '42px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+              background: 'rgba(255, 255, 255, 0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.4)',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              marginBottom: '14px'
+              boxShadow: '0 0 16px rgba(255, 255, 255, 0.35)',
+              border: '2px solid rgba(255, 255, 255, 0.4)',
+              flexShrink: 0
             }}
           >
-            <Mic size={22} color="#ffffff" />
+            <Mic size={20} color="#ffffff" />
           </div>
 
-          <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
-            Voice Shopping
-          </h4>
-          <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.4 }}>
-            Just speak. We&apos;ll find it for you!
-          </p>
+          <div>
+            <h4 style={{ margin: '0 0 2px 0', fontSize: '0.98rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
+              Voice Shopping
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.35 }}>
+              Just speak. We&apos;ll find it for you!
+            </p>
+          </div>
         </div>
 
-        {/* Ambient Wave Graphic at Bottom */}
+        {/* Wave Graphic at Bottom */}
         <svg
-          viewBox="0 0 200 40"
+          viewBox="0 0 200 30"
           style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             width: '100%',
-            height: '35px',
-            opacity: 0.45,
+            height: '24px',
+            opacity: 0.35,
             pointerEvents: 'none'
           }}
         >
           <path
-            d="M0,25 C40,10 70,35 110,20 C150,5 170,30 200,15 L200,40 L0,40 Z"
-            fill="rgba(56, 189, 248, 0.5)"
-          />
-          <path
-            d="M0,30 C30,15 60,32 100,24 C140,16 160,35 200,20 L200,40 L0,40 Z"
-            fill="rgba(99, 102, 241, 0.6)"
+            d="M0,15 C40,5 70,25 110,12 C150,2 170,22 200,8 L200,30 L0,30 Z"
+            fill="#ffffff"
           />
         </svg>
       </div>

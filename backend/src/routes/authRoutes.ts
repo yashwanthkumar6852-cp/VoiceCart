@@ -253,7 +253,7 @@ router.post('/otp/send', async (req: Request, res: Response) => {
 router.post('/otp/verify', async (req: Request, res: Response) => {
   try {
     const identifier = req.body.identifier || req.body.phone || req.body.email;
-    const { otp, fullName, preferredLanguage, rememberMe = true } = req.body;
+    const { otp, fullName, preferredLanguage, rememberMe = true, password } = req.body;
 
     if (!identifier || !otp) {
       return res.status(400).json({ error: 'Identifier and 6-digit verification code are required' });
@@ -265,6 +265,7 @@ router.post('/otp/verify', async (req: Request, res: Response) => {
       fullName,
       preferredLanguage,
       rememberMe,
+      password,
       userAgent: req.headers['user-agent'],
       ipAddress: req.ip
     });

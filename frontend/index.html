@@ -3,14 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      // Filter noisy logs injected by third-party browser extensions (e.g. MetaMask / Web3 wallets)
+      // Filter noisy logs injected by third-party browser extensions (e.g. MetaMask / Web3 wallets contentscript.js)
       (function() {
+        const noisyKeywords = [
+          'ObjectMultiplex',
+          'MaxListenersExceededWarning',
+          'app-init-liveness',
+          'background-liveness',
+          'orphaned data for stream'
+        ];
+
+        function isNoisy(args) {
+          try {
+            return args.some(function(arg) {
+              if (!arg) return false;
+              const text = typeof arg === 'string'
+                ? arg
+                : (arg.message || arg.name || (arg.stack ? String(arg.stack) : String(arg)));
+              return noisyKeywords.some(function(kw) { return text.indexOf(kw) !== -1; });
+            });
+          } catch (e) {
+            return false;
+          }
+        }
+
         const origWarn = console.warn;
         console.warn = function(...args) {
-          if (args.length > 0 && typeof args[0] === 'string' && (args[0].includes('ObjectMultiplex') || args[0].includes('MaxListenersExceededWarning'))) {
-            return;
-          }
+          if (isNoisy(args)) return;
           origWarn.apply(console, args);
+        };
+
+        const origError = console.error;
+        console.error = function(...args) {
+          if (isNoisy(args)) return;
+          origError.apply(console, args);
         };
       })();
     </script>

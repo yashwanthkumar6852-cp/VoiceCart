@@ -8,7 +8,10 @@ import {
   Volume2,
   VolumeX,
   Sparkles,
-  Loader2
+  Loader2,
+  Sun,
+  Moon,
+  Trash2
 } from 'lucide-react';
 import { Product, CartItem, SearchResponse } from '../../types';
 import { SupportedLanguage } from '../../i18n/translations';
@@ -18,6 +21,7 @@ import { voiceStore } from '../../voice/voiceStore';
 import { commandRouter } from '../../voice/commandRouter';
 import { actionDispatcher } from '../../voice/dispatcher';
 import { ttsService } from '../../voice/tts';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
   language: SupportedLanguage;
@@ -36,14 +40,17 @@ interface Props {
 
 export const DashboardRightSidebar: React.FC<Props> = ({
   language,
+  onLanguageChange,
   handlers,
   cart,
   onAddToCart,
   onNavigateToCart,
   onSearchPrompt
 }) => {
+  const { theme, setTheme } = useTheme();
   const [quantities, setQuantities] = useState<Record<string, number>>({
     'cart-demo-iphone15': 1,
+    'cart-demo-nike-revolution7': 1,
     'cart-demo-sony-headphones': 1
   });
 
@@ -197,6 +204,12 @@ export const DashboardRightSidebar: React.FC<Props> = ({
       title: 'iPhone 15 (128GB)',
       price: 64999,
       imageUrl: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=200&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 'cart-demo-nike-revolution7',
+      title: 'Nike Revolution 7',
+      price: 4499,
+      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&auto=format&fit=crop&q=80'
     },
     {
       id: 'cart-demo-sony-headphones',
@@ -777,52 +790,72 @@ export const DashboardRightSidebar: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Quantity Stepper */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'var(--bg-subtle, #f1f5f9)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  padding: '2px 6px'
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => updateQty(item.id, -1)}
+              {/* Quantity Stepper & Delete */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div
                   style={{
-                    border: 'none',
-                    background: 'none',
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '2px'
+                    gap: '6px',
+                    background: 'var(--bg-subtle, #f1f5f9)',
+                    border: '1px solid var(--border-color, #e2e8f0)',
+                    borderRadius: '6px',
+                    padding: '2px 6px'
                   }}
                 >
-                  <Minus size={12} />
-                </button>
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, minWidth: '14px', textAlign: 'center' }}>
-                  {item.quantity}
-                </span>
+                  <button
+                    type="button"
+                    onClick={() => updateQty(item.id, -1)}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '2px'
+                    }}
+                  >
+                    <Minus size={12} />
+                  </button>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, minWidth: '14px', textAlign: 'center' }}>
+                    {item.quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateQty(item.id, 1)}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '2px'
+                    }}
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => updateQty(item.id, 1)}
+                  onClick={() => updateQty(item.id, -item.quantity)}
                   style={{
-                    border: 'none',
                     background: 'none',
-                    color: 'var(--text-secondary)',
+                    border: 'none',
+                    color: '#94a3b8',
                     cursor: 'pointer',
+                    padding: '4px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '2px'
+                    justifyContent: 'center'
                   }}
+                  title="Remove item"
                 >
-                  <Plus size={12} />
+                  <Trash2 size={13} />
                 </button>
               </div>
             </div>
@@ -830,7 +863,7 @@ export const DashboardRightSidebar: React.FC<Props> = ({
         </div>
 
         {/* Divider */}
-        <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0 16px 0' }} />
+        <div style={{ height: '1px', background: 'var(--border-color, #e2e8f0)', margin: '4px 0 16px 0' }} />
 
         {/* Total & Checkout Button */}
         <div
@@ -854,7 +887,7 @@ export const DashboardRightSidebar: React.FC<Props> = ({
           onClick={onNavigateToCart}
           style={{
             width: '100%',
-            background: '#4f46e5',
+            background: '#2563eb',
             color: '#ffffff',
             border: 'none',
             borderRadius: '12px',
@@ -862,14 +895,176 @@ export const DashboardRightSidebar: React.FC<Props> = ({
             fontSize: '0.88rem',
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)',
-            transition: 'background 0.15s ease'
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+            transition: 'background 0.15s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = '#4338ca')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = '#4f46e5')}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#1d4ed8')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = '#2563eb')}
         >
-          Go to Checkout
+          <span>Go to Checkout</span>
+          <ArrowRight size={15} />
         </button>
+      </div>
+
+      {/* 3. Smart Shopping with Voice Promo Card */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)',
+          borderRadius: '18px',
+          padding: '18px 16px',
+          color: '#ffffff',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 8px 24px -4px rgba(37, 99, 235, 0.4)',
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', zIndex: 2 }}>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 0 14px rgba(255, 255, 255, 0.35)',
+              border: '2px solid rgba(255, 255, 255, 0.4)',
+              flexShrink: 0
+            }}
+          >
+            <Mic size={20} color="#ffffff" />
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 2px 0', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
+              Smart Shopping with Voice
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.35 }}>
+              Just speak. We&apos;ll find it for you!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Language / Theme Card */}
+      <div
+        style={{
+          background: 'var(--bg-card, #ffffff)',
+          borderRadius: '18px',
+          padding: '18px 16px',
+          boxShadow: 'var(--shadow-card, 0 4px 20px rgba(0,0,0,0.04))',
+          border: '1px solid var(--border-color, #e2e8f0)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px'
+        }}
+      >
+        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main, #0f172a)' }}>
+          Language / Theme
+        </div>
+
+        {/* Language Radio Options */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          {[
+            { id: 'en', label: 'English' },
+            { id: 'kn', label: 'ಕನ್ನಡ' },
+            { id: 'hi', label: 'हिन्दी' }
+          ].map((l) => {
+            const isSelected = language === l.id;
+            return (
+              <label
+                key={l.id}
+                onClick={() => onLanguageChange(l.id as any)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '0.82rem',
+                  fontWeight: isSelected ? 700 : 500,
+                  color: isSelected ? 'var(--text-main, #0f172a)' : 'var(--text-secondary, #64748b)',
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+                <div
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '50%',
+                    border: isSelected ? '4.5px solid #2563eb' : '1.5px solid var(--border-color, #cbd5e1)',
+                    background: isSelected ? '#ffffff' : 'transparent',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <span>{l.label}</span>
+              </label>
+            );
+          })}
+        </div>
+
+        {/* Theme Toggle Buttons */}
+        <div
+          style={{
+            display: 'flex',
+            background: 'var(--bg-subtle, #f1f5f9)',
+            borderRadius: '10px',
+            padding: '3px',
+            border: '1px solid var(--border-color, #e2e8f0)',
+            gap: '4px'
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setTheme('light')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '6px 0',
+              borderRadius: '7px',
+              border: 'none',
+              background: theme === 'light' ? 'var(--bg-card, #ffffff)' : 'transparent',
+              color: theme === 'light' ? 'var(--text-main, #0f172a)' : 'var(--text-muted, #94a3b8)',
+              boxShadow: theme === 'light' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+              fontSize: '0.78rem',
+              fontWeight: theme === 'light' ? 700 : 500,
+              cursor: 'pointer'
+            }}
+          >
+            <Sun size={14} color={theme === 'light' ? '#2563eb' : 'currentColor'} />
+            <span>Light</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme('dark')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '6px 0',
+              borderRadius: '7px',
+              border: 'none',
+              background: theme === 'dark' ? 'var(--bg-card, #ffffff)' : 'transparent',
+              color: theme === 'dark' ? 'var(--text-main, #ffffff)' : 'var(--text-muted, #94a3b8)',
+              boxShadow: theme === 'dark' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+              fontSize: '0.78rem',
+              fontWeight: theme === 'dark' ? 700 : 500,
+              cursor: 'pointer'
+            }}
+          >
+            <Moon size={14} color={theme === 'dark' ? '#6366f1' : 'currentColor'} />
+            <span>Dark</span>
+          </button>
+        </div>
       </div>
     </aside>
   );

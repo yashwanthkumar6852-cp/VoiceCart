@@ -35,12 +35,14 @@ import { ProductImage } from './ProductImage';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  cartItems: CartItem[];
+  cartItems?: CartItem[];
   amount: number;
   onPaymentSuccess: (order: OrderRecord, paymentId: string, method: string) => void;
   onNavigateToOrders?: (orderId?: string) => void;
   paymentConfig?: PaymentConfig | null;
   initialTab?: PaymentTab;
+  existingOrder?: OrderRecord | null;
+  mode?: 'checkout' | 'pay_before_delivery';
 }
 
 export type PaymentTab = 'cod' | 'upi' | 'qr' | 'wallet' | 'card_netbanking';
@@ -68,14 +70,37 @@ const POPULAR_WALLETS = [
 export const PaymentModal: React.FC<Props> = ({
   isOpen,
   onClose,
-  cartItems,
+  cartItems = [],
   amount,
   onPaymentSuccess,
   onNavigateToOrders,
   paymentConfig,
-  initialTab = 'upi'
+  initialTab = 'upi',
+  existingOrder = null,
+  mode = 'checkout'
 }) => {
-  const [activeTab, setActiveTab] = useState<PaymentTab>(initialTab);
+  const isPayBeforeDelivery = mode === 'pay_before_delivery' || Boolean(existingOrder);
+  const effectiveAmount = existingOrder ? existingOrder.totalAmount : amount;
+  const displayItems = useMemo(() => {
+    if (cartItems && cartItems.length > 0) return cartItems;
+    if (existingOrder?.items && existingOrder.items.length > 0) {
+      return existingOrder.items.map((it: any) => ({
+        id: it.id || it.productId,
+        product: {
+          id: it.productId,
+          productId: it.productId,
+          title: it.name || it.title,
+          price: it.price,
+          imageUrl: it.image || it.imageUrl,
+          store: it.store
+        },
+        quantity: it.quantity,
+        currentPrice: it.price
+      }));
+    }
+    return [];
+  }, [cartItems, existingOrder]);
+  const [activeTab, setActiveTab] = useState<PaymentTab>(initialTab === 'cod' && isPayBeforeDelivery ? 'upi' : initialTab);
   const [cardSubTab, setCardSubTab] = useState<CardNetbankingSubTab>('card');
   const [demoOrder, setDemoOrder] = useState<any>(null);
   const [internalOrderId, setInternalOrderId] = useState<string>('');
@@ -151,31 +176,45 @@ export const PaymentModal: React.FC<Props> = ({
       setQrCountdown(300);
       setVerifiedUpiName(null);
       setUpiVerificationError('');
-      if (initialTab) setActiveTab(initialTab);
+      if (initialTab) {
+        setActiveTab(initialTab === 'cod' && isPayBeforeDelivery ? 'upi' : initialTab);
+      } else if (isPayBeforeDelivery) {
+        setActiveTab('upi');
+      }
 
-      api.createDemoOrder({
-        items: cartItems,
-        notes: { platform: 'VoiceCart Instant Gateway' }
-      })
-        .then((res) => {
-          if (res.success && res.order) {
-            setDemoOrder(res.order);
-            setInternalOrderId(res.internalOrderId);
-          }
-        })
-        .catch((err) => {
-          console.warn('Order creation warning:', err);
-          const fallbackId = `order_${Date.now().toString().slice(-6)}`;
-          setDemoOrder({ id: fallbackId, amount: amount * 100, currency: 'INR' });
-          setInternalOrderId(`VC-ORD-${Date.now().toString().slice(-6)}`);
-        })
-        .finally(() => {
-          setIsInitializing(false);
+      if (existingOrder) {
+        setDemoOrder({
+          id: existingOrder.paymentOrderId || existingOrder.id,
+          amount: Math.round(effectiveAmount * 100),
+          currency: 'INR'
         });
+        setInternalOrderId(existingOrder.orderId);
+        setIsInitializing(false);
+      } else {
+        api.createDemoOrder({
+          items: cartItems,
+          notes: { platform: 'VoiceCart Instant Gateway' }
+        })
+          .then((res) => {
+            if (res.success && res.order) {
+              setDemoOrder(res.order);
+              setInternalOrderId(res.internalOrderId);
+            }
+          })
+          .catch((err) => {
+            console.warn('Order creation warning:', err);
+            const fallbackId = `order_${Date.now().toString().slice(-6)}`;
+            setDemoOrder({ id: fallbackId, amount: amount * 100, currency: 'INR' });
+            setInternalOrderId(`VC-ORD-${Date.now().toString().slice(-6)}`);
+          })
+          .finally(() => {
+            setIsInitializing(false);
+          });
+      }
     } else if (!isOpen) {
       wasOpenRef.current = false;
     }
-  }, [isOpen, cartItems, amount, initialTab]);
+  }, [isOpen, cartItems, amount, initialTab, existingOrder, isPayBeforeDelivery, effectiveAmount]);
 
   // QR Countdown timer - cleanly manages interval without recreating every second
   useEffect(() => {
@@ -203,13 +242,13 @@ export const PaymentModal: React.FC<Props> = ({
   }, [qrCountdown]);
 
   const orderDisplayId = internalOrderId || demoOrder?.id || `VC-ORDER`;
-  const merchantUpiId = paymentConfig?.upiId || 'pay@voicecart';
-  const merchantName = paymentConfig?.upiPayeeName || 'VoiceCart Store';
+  const merchantUpiId = paymentConfig?.upiId || '8660318787@ibl';
+  const merchantName = paymentConfig?.upiPayeeName || 'VoiceCart';
 
   // Demo UPI URI
   const demoUpiUri = useMemo(() => {
-    return `upi://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(orderDisplayId)}`;
-  }, [merchantUpiId, merchantName, amount, orderDisplayId]);
+    return `upi://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${effectiveAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(orderDisplayId)}`;
+  }, [merchantUpiId, merchantName, effectiveAmount, orderDisplayId]);
 
   // Generate live QR code for UPI
   useEffect(() => {
@@ -319,17 +358,27 @@ export const PaymentModal: React.FC<Props> = ({
     await new Promise((r) => setTimeout(r, Math.max(300, (processingDelay * 1000) / 3)));
 
     try {
-      const confirmation = await api.confirmDemoPayment({
-        orderId: demoOrder?.id || internalOrderId,
-        method: methodCode,
-        demoResult: resultToUse,
-        failureReason: failureText || (resultToUse === 'FAILED' ? 'Payment declined by bank switch' : undefined)
-      });
+      let confirmation: any;
+      if (isPayBeforeDelivery && existingOrder) {
+        confirmation = await api.payBeforeDelivery({
+          orderId: existingOrder.orderId || existingOrder.id,
+          method: methodCode,
+          demoResult: resultToUse,
+          failureReason: failureText || (resultToUse === 'FAILED' ? 'Payment declined by bank switch' : undefined)
+        });
+      } else {
+        confirmation = await api.confirmDemoPayment({
+          orderId: demoOrder?.id || internalOrderId,
+          method: methodCode,
+          demoResult: resultToUse,
+          failureReason: failureText || (resultToUse === 'FAILED' ? 'Payment declined by bank switch' : undefined)
+        });
+      }
 
       setIsProcessing(false);
 
       if (confirmation.success) {
-        const confirmedOrderId = confirmation.orderId || demoOrder?.id || internalOrderId || `order_${Date.now()}`;
+        const confirmedOrderId = confirmation.orderId || existingOrder?.orderId || demoOrder?.id || internalOrderId || `order_${Date.now()}`;
         const confirmedPaymentId = confirmation.paymentId || `pay_${Date.now()}`;
         const confirmedMethod = confirmation.method || methodCode;
         const confirmedPaidAt = confirmation.paidAt || new Date().toISOString();
@@ -338,12 +387,12 @@ export const PaymentModal: React.FC<Props> = ({
           orderId: confirmedOrderId,
           paymentId: confirmedPaymentId,
           method: confirmedMethod,
-          amount: confirmation.amount || amount,
+          amount: confirmation.amount || effectiveAmount,
           paidAt: confirmedPaidAt,
           order: confirmation.order
         });
 
-        if (confirmation.isPaid) {
+        if (confirmation.isPaid || isPayBeforeDelivery) {
           setPaymentView('success');
           if (confirmation.order) onPaymentSuccess(confirmation.order, confirmedPaymentId, confirmedMethod);
         } else if (confirmation.isCodPending) {
@@ -626,17 +675,19 @@ export const PaymentModal: React.FC<Props> = ({
                 <div style={{ marginBottom: '18px' }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Lock size={20} color="var(--primary)" />
-                    <span>Select Payment Option</span>
+                    <span>{isPayBeforeDelivery ? 'Pay Online Before Delivery' : 'Select Payment Option'}</span>
                   </h3>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Choose any of the 5 payment methods below to complete your checkout.
+                    {isPayBeforeDelivery
+                      ? 'Pay online now to convert your COD order into a pre-paid delivery. Zero cash due on arrival.'
+                      : 'Choose any of the 5 payment methods below to complete your checkout.'}
                   </p>
                 </div>
 
                 {/* 5 MAIN TABS */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', marginBottom: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isPayBeforeDelivery ? 'repeat(4, 1fr)' : 'repeat(5, 1fr)', gap: '6px', marginBottom: '20px' }}>
                   {[
-                    { id: 'cod', label: 'COD', icon: Truck },
+                    ...(isPayBeforeDelivery ? [] : [{ id: 'cod', label: 'COD', icon: Truck }]),
                     { id: 'upi', label: 'UPI', icon: Smartphone },
                     { id: 'qr', label: 'QR Code', icon: QrCode },
                     { id: 'wallet', label: 'Wallets', icon: Wallet },
@@ -830,7 +881,7 @@ export const PaymentModal: React.FC<Props> = ({
                         cursor: 'pointer'
                       }}
                     >
-                      Request Payment of ₹{amount.toLocaleString()}
+                      Request Payment of ₹{effectiveAmount.toLocaleString()}
                     </button>
                   </div>
                 )}
@@ -843,62 +894,85 @@ export const PaymentModal: React.FC<Props> = ({
                       <span>QR code expires in: {formattedCountdown}</span>
                     </div>
 
-                    {/* QR Code Container */}
+                    {/* Official VoiceCart QR Card Container */}
                     <div
                       style={{
-                        background: '#fff',
-                        padding: '14px',
-                        borderRadius: '16px',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                        display: 'inline-block'
+                        position: 'relative',
+                        maxWidth: '240px',
+                        width: '100%',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.5)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        background: '#ffffff',
+                        padding: '6px'
                       }}
                     >
-                      {upiQrUrl ? (
-                        <img src={upiQrUrl} alt="UPI QR" style={{ width: '180px', height: '180px', display: 'block' }} />
-                      ) : (
-                        <div style={{ width: '180px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <RefreshCw size={24} className="mic-active-pulse" />
-                        </div>
-                      )}
+                      <img
+                        src="/voicecart-qr.png"
+                        alt="VoiceCart Official UPI QR"
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          display: 'block',
+                          borderRadius: '16px'
+                        }}
+                      />
                     </div>
 
-                    <div>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', display: 'block' }}>
-                        ₹{amount.toLocaleString()}
-                      </span>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                        Scan with any UPI App (GPay, PhonePe, Paytm, BHIM)
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                          ₹{effectiveAmount.toLocaleString()}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            color: '#10b981',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontWeight: 700
+                          }}
+                        >
+                          Verified Merchant
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        Payee UPI ID: <strong style={{ color: 'var(--text-main)', letterSpacing: '0.3px' }}>8660318787@ibl</strong>
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '360px' }}>
+                    <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '380px' }}>
                       <button
                         onClick={handleCopyUpi}
                         style={{
                           flex: 1,
-                          padding: '10px',
+                          padding: '11px',
                           borderRadius: '10px',
                           background: 'var(--bg-subtle)',
                           border: '1px solid var(--border-color)',
-                          color: 'var(--text-main)',
-                          fontSize: '0.8rem',
+                          color: copiedUpi ? '#10b981' : 'var(--text-main)',
+                          fontSize: '0.82rem',
                           fontWeight: 600,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '6px'
+                          gap: '6px',
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        {copiedUpi ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-                        <span>{copiedUpi ? 'Copied!' : 'Copy UPI ID'}</span>
+                        {copiedUpi ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
+                        <span>{copiedUpi ? 'Copied 8660318787@ibl!' : 'Copy UPI ID'}</span>
                       </button>
 
                       <button
-                        onClick={() => executePayment('qr', 'UPI QR Code')}
+                        onClick={() => executePayment('qr', 'VoiceCart UPI (8660318787@ibl)')}
                         style={{
                           flex: 1.3,
-                          padding: '10px',
+                          padding: '11px',
                           borderRadius: '10px',
                           background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
                           border: 'none',
@@ -909,10 +983,11 @@ export const PaymentModal: React.FC<Props> = ({
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '6px'
+                          gap: '6px',
+                          boxShadow: '0 4px 14px rgba(99, 102, 241, 0.3)'
                         }}
                       >
-                        <Zap size={14} />
+                        <Zap size={15} />
                         <span>Simulate Scan & Pay</span>
                       </button>
                     </div>
@@ -982,7 +1057,7 @@ export const PaymentModal: React.FC<Props> = ({
                         cursor: 'pointer'
                       }}
                     >
-                      Pay ₹{amount.toLocaleString()} from Wallet
+                      Pay ₹{effectiveAmount.toLocaleString()} from Wallet
                     </button>
                   </div>
                 )}
@@ -1136,7 +1211,7 @@ export const PaymentModal: React.FC<Props> = ({
                             cursor: !isLuhnValid || !isExpiryValid || cardCvv.length < 3 ? 'not-allowed' : 'pointer'
                           }}
                         >
-                          Pay ₹{amount.toLocaleString()} via Card
+                          Pay ₹{effectiveAmount.toLocaleString()} via Card
                         </button>
                       </form>
                     )}
@@ -1246,7 +1321,9 @@ export const PaymentModal: React.FC<Props> = ({
                     Payment Successful!
                   </h4>
                   <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    Transaction authorized and confirmed successfully.
+                    {isPayBeforeDelivery
+                      ? 'Payment successful! Your order will be delivered as scheduled.'
+                      : 'Transaction authorized and confirmed successfully.'}
                   </span>
                 </div>
 
@@ -1551,27 +1628,27 @@ export const PaymentModal: React.FC<Props> = ({
 
               {/* Items List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', marginBottom: '16px', paddingRight: '4px' }}>
-                {cartItems.map((item) => (
+                {displayItems.map((item: any) => (
                   <div key={item.id} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
                       <ProductImage
-                        src={item.product.imageUrl}
-                        images={item.product.images}
-                        thumbnail={(item.product as any).thumbnail}
-                        serpapi_thumbnail={(item.product as any).serpapi_thumbnail}
-                        alt={item.product.title}
-                        store={item.product.store}
-                        productId={item.product.productId}
-                        variantText={item.product.variantText}
+                        src={item.product?.imageUrl}
+                        images={item.product?.images}
+                        thumbnail={(item.product as any)?.thumbnail}
+                        serpapi_thumbnail={(item.product as any)?.serpapi_thumbnail}
+                        alt={item.product?.title || 'Product'}
+                        store={item.product?.store}
+                        productId={item.product?.productId}
+                        variantText={item.product?.variantText}
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.product.title}
+                        {item.product?.title || 'Product'}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        Qty: {item.quantity} • ₹{item.currentPrice.toLocaleString()}
+                        Qty: {item.quantity} • ₹{item.currentPrice?.toLocaleString() || item.price?.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1582,7 +1659,7 @@ export const PaymentModal: React.FC<Props> = ({
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
                   <span>Items Subtotal:</span>
-                  <span>₹{amount.toLocaleString()}</span>
+                  <span>₹{effectiveAmount.toLocaleString()}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
                   <span>Delivery Charges:</span>
@@ -1594,7 +1671,7 @@ export const PaymentModal: React.FC<Props> = ({
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', paddingTop: '8px', borderTop: '1px dashed var(--border-color)' }}>
                   <span>Total Payable:</span>
-                  <span style={{ color: 'var(--primary)' }}>₹{amount.toLocaleString()}</span>
+                  <span style={{ color: 'var(--primary)' }}>₹{effectiveAmount.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -1643,7 +1720,7 @@ export const PaymentModal: React.FC<Props> = ({
                 {activeUpiAppModal}
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
-                Approve payment of <strong>₹{amount.toLocaleString()}</strong> to {merchantName}
+                Approve payment of <strong>₹{effectiveAmount.toLocaleString()}</strong> to {merchantName}
               </p>
 
               {/* PIN DISPLAY */}
@@ -1767,7 +1844,7 @@ export const PaymentModal: React.FC<Props> = ({
               </div>
 
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
-                Simulating OTP sent to your registered mobile for ₹{amount.toLocaleString()}.
+                Simulating OTP sent to your registered mobile for ₹{effectiveAmount.toLocaleString()}.
               </p>
 
               <div style={{ padding: '8px', borderRadius: '8px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', fontSize: '0.78rem', fontWeight: 700, marginBottom: '14px' }}>
@@ -1860,7 +1937,7 @@ export const PaymentModal: React.FC<Props> = ({
                 Wallet Authorization
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                Enter OTP sent to your wallet number to debit ₹{amount.toLocaleString()}.
+                Enter OTP sent to your wallet number to debit ₹{effectiveAmount.toLocaleString()}.
               </p>
 
               <div style={{ padding: '8px', borderRadius: '8px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', fontSize: '0.78rem', fontWeight: 700, marginBottom: '14px' }}>
@@ -1987,7 +2064,7 @@ export const PaymentModal: React.FC<Props> = ({
                 </div>
 
                 <div style={{ padding: '8px', borderRadius: '8px', background: 'var(--bg-subtle)', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  Total Amount to Debit: <strong>₹{amount.toLocaleString()}</strong>
+                  Total Amount to Debit: <strong>₹{effectiveAmount.toLocaleString()}</strong>
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>

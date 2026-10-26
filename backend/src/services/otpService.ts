@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { dbClient } from '../db/dbClient';
 import { config } from '../config';
@@ -187,7 +188,9 @@ export class OtpService {
     await dbClient.saveOtp(otpRecord);
     await dbClient.logOtpRequest(identifier, ipAddress);
 
-    const isDevOrPresenter = Boolean(config.presenterMode || config.nodeEnv === 'development');
+    const isDevOrPresenter = Boolean(
+      (config.presenterMode || config.nodeEnv === 'development') && config.nodeEnv !== 'test'
+    );
 
     // 5. Dispatch via appropriate channel adapter
     if (type === 'email') {
@@ -234,6 +237,7 @@ export class OtpService {
     rememberMe?: boolean;
     userAgent?: string;
     ipAddress?: string;
+    password?: string;
   }): Promise<VerifyOtpResult> {
     const { identifier, type } = this.normalizeIdentifier(params.identifier);
     const enteredOtp = (params.otp || '').trim();
@@ -287,11 +291,17 @@ export class OtpService {
       const userId = 'usr_' + (type === 'email' ? 'em_' : 'ph_') + uuidv4().replace(/-/g, '').substring(0, 12);
       const defaultName = params.fullName?.trim() || (type === 'email' ? identifier.split('@')[0] : `User ${identifier.slice(-4)}`);
 
+      let passwordHash: string | null = null;
+      if (params.password && params.password.length >= 6) {
+        passwordHash = await bcrypt.hash(params.password, 12);
+      }
+
       user = await dbClient.createUser({
         id: userId,
         name: defaultName,
         email: type === 'email' ? identifier : `${identifier}@voicecart.in`,
         mobile: type === 'mobile' ? identifier : null,
+        passwordHash,
         language: params.preferredLanguage || 'en',
         emailVerified: true
       });
@@ -303,6 +313,11 @@ export class OtpService {
       if (params.preferredLanguage && params.preferredLanguage !== user.language) {
         user.language = params.preferredLanguage;
         await dbClient.updateUser(user.id, { language: user.language });
+      }
+      if (params.password && !user.passwordHash && params.password.length >= 6) {
+        const passwordHash = await bcrypt.hash(params.password, 12);
+        await dbClient.updateUserPassword(user.id, passwordHash);
+        user.passwordHash = passwordHash;
       }
     }
 

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { config } from '../config';
 
 export interface CreateOrderParams {
@@ -9,6 +10,7 @@ export interface CreateOrderParams {
 export interface ConfirmPaymentParams {
   orderId: string;
   method: string;
+  amount?: number;
   demoResult?: 'SUCCESS' | 'FAILED' | 'PENDING';
   failureReason?: string;
   paymentDetails?: any;
@@ -19,14 +21,26 @@ export class DemoPaymentService {
     console.log('✅ VoiceCart Built-in DEMO Payment Gateway Initialized (No External Gateway).');
   }
 
+  public generatePaymentSignature(paymentId: string, orderId: string, amount: number = 0): string {
+    const payload = `${orderId}|${paymentId}|${amount}`;
+    return crypto.createHmac('sha256', config.jwtSecret).update(payload).digest('hex');
+  }
+
+  public verifyPaymentSignature(paymentId: string, orderId: string, amount: number, signature: string): boolean {
+    if (!signature) return false;
+    const expected = this.generatePaymentSignature(paymentId, orderId, amount);
+    if (expected.length !== signature.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  }
+
   public getConfig() {
     return {
       isConfigured: true,
       isDemo: true,
       name: config.demoPayment.name,
       currency: config.demoPayment.currency,
-      upiId: config.upi.id || 'demo@voicecart',
-      upiPayeeName: config.upi.payeeName || 'VoiceCart Demo Store',
+      upiId: config.upi.id || '8660318787@ibl',
+      upiPayeeName: config.upi.payeeName || 'VoiceCart',
       supportedMethods: ['COD', 'UPI', 'QR', 'WALLET', 'CARD', 'NETBANKING']
     };
   }
@@ -117,6 +131,8 @@ export class DemoPaymentService {
     else if (normalizedMethod === 'card') methodDisplay = 'Debit / Credit Card';
     else if (normalizedMethod === 'netbanking') methodDisplay = 'Netbanking';
 
+    const signature = this.generatePaymentSignature(paymentId, orderId, params.amount || 0);
+
     return {
       paymentId,
       orderId,
@@ -124,6 +140,7 @@ export class DemoPaymentService {
       method: methodDisplay,
       methodCode: method,
       paidAt: timestamp,
+      signature,
       message,
       isSuccess: finalStatus === 'PAID' || finalStatus === 'cod_pending'
     };

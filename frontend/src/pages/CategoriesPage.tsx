@@ -239,6 +239,8 @@ export const CategoriesPage: React.FC<Props> = ({
             <Search size={16} color="#94a3b8" />
             <input
               type="text"
+              className="search-bar-input search-input"
+              data-search-bar="true"
               placeholder={language === 'kn' ? 'ವರ್ಗ ಹುಡುಕಿ...' : language === 'hi' ? 'श्रेणी खोजें...' : 'Filter categories...'}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
@@ -248,7 +250,8 @@ export const CategoriesPage: React.FC<Props> = ({
                 outline: 'none',
                 fontSize: '0.86rem',
                 color: '#0f172a',
-                width: '100%'
+                width: '100%',
+                caretColor: 'auto'
               }}
             />
           </div>

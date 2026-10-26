@@ -307,9 +307,62 @@ httpClient.interceptors.response.use(
   }
 );
 
+// In-Memory Fast Cache with TTL for instant response & high-frequency reads
+interface FastCacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+class FastMemoryCache {
+  private cache = new Map<string, FastCacheEntry<any>>();
+  private defaultTtlMs: number;
+  private maxSize: number;
+
+  constructor(defaultTtlMs = 3 * 60 * 1000, maxSize = 150) {
+    this.defaultTtlMs = defaultTtlMs;
+    this.maxSize = maxSize;
+  }
+
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > this.defaultTtlMs) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  set<T>(key: string, data: T): void {
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) this.cache.delete(oldestKey);
+    }
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+export const fastClientCache = new FastMemoryCache(3 * 60 * 1000, 200);
+
 // Typed API Client
 export const api = {
-  // Feed Endpoint (GET /api/feed)
+  // Clear client-side memory cache
+  clearCache: (): void => {
+    fastClientCache.clear();
+  },
+
+  // Feed Endpoint (GET /api/feed) with fast in-memory cache
   getDashboardFeed: async (
     category = 'all',
     store?: string,
@@ -324,6 +377,14 @@ export const api = {
     status: 'ready' | 'building' | 'unavailable';
     message?: string;
   }> => {
+    const cacheKey = `feed:${category}:${store || 'all'}`;
+    if (!refresh) {
+      const cached = fastClientCache.get<any>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
     const params: any = { category };
     if (store && store !== 'all') params.store = store;
     if (refresh) params.refresh = 'true';
@@ -332,16 +393,19 @@ export const api = {
     const data = res.data;
 
     const items = data.items || data.products || [];
-    return {
+    const result = {
       category: data.category || category,
       items,
       products: items,
       total: data.total || items.length,
       updatedAt: data.updatedAt || data.lastUpdated || new Date().toISOString(),
       lastUpdated: data.updatedAt || data.lastUpdated || new Date().toISOString(),
-      status: data.status || (items.length > 0 ? 'ready' : 'building'),
+      status: (data.status || (items.length > 0 ? 'ready' : 'building')) as 'ready' | 'building' | 'unavailable',
       message: data.message
     };
+
+    fastClientCache.set(cacheKey, result);
+    return result;
   },
 
   // Health Check (GET /api/health)
@@ -430,7 +494,7 @@ export const api = {
     return res.data;
   },
 
-  verifyOtp: async (params: { identifier: string; otp: string; fullName?: string; preferredLanguage?: string; rememberMe?: boolean }): Promise<{ success: boolean; user: any; session?: any; isNewUser: boolean; identifier: string; message: string }> => {
+  verifyOtp: async (params: { identifier: string; otp: string; fullName?: string; preferredLanguage?: string; rememberMe?: boolean; password?: string }): Promise<{ success: boolean; user: any; session?: any; isNewUser: boolean; identifier: string; message: string }> => {
     const res = await httpClient.post(`${API_ROUTES.AUTH}/otp/verify`, params);
     if (res.data?.session?.accessToken) {
       setAccessToken(res.data.session.accessToken);
@@ -464,8 +528,15 @@ export const api = {
     return res.data;
   },
 
-  // Search
+  // Search with fast memory cache
   search: async (query: string, filters: SearchFilters = {}): Promise<SearchResponse> => {
+    const isRefresh = (filters as any)?.refresh === true;
+    const cacheKey = `search:${query.trim().toLowerCase()}:${JSON.stringify(filters)}`;
+    if (!isRefresh && !filters.requestId) {
+      const cached = fastClientCache.get<SearchResponse>(cacheKey);
+      if (cached) return cached;
+    }
+
     const params: any = { q: query };
     if (filters.maxBudget) params.budget = filters.maxBudget;
     if (filters.minBudget) params.minBudget = filters.minBudget;
@@ -480,6 +551,10 @@ export const api = {
       params,
       signal: (filters as any)?.signal
     });
+
+    if (res.data && res.data.products && res.data.products.length > 0) {
+      fastClientCache.set(cacheKey, res.data);
+    }
     return res.data;
   },
 
@@ -741,6 +816,39 @@ export const api = {
     return res.data;
   },
 
+  payBeforeDelivery: async (payload: {
+    orderId: string;
+    method?: string;
+    demoResult?: 'SUCCESS' | 'FAILED' | 'PENDING';
+    failureReason?: string;
+    paymentDetails?: any;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    order: OrderRecord;
+    paymentId?: string;
+    error?: string;
+  }> => {
+    const res = await httpClient.post(`${API_ROUTES.PAYMENTS}/pay-before-delivery`, payload);
+    return res.data;
+  },
+
+  checkPayBeforeDeliveryEligibility: async (orderId: string): Promise<{
+    success: boolean;
+    orderId: string;
+    isEligible: boolean;
+    isCod: boolean;
+    isPaid: boolean;
+    status: string;
+    paymentStatus: string;
+    amountDue: number;
+    totalAmount: number;
+    expectedDeliveryDate: string;
+  }> => {
+    const res = await httpClient.get(`${API_ROUTES.PAYMENTS}/orders/${orderId}/pay-before-delivery-eligibility`);
+    return res.data;
+  },
+
   // Account & Profile
   getAccountSummary: async (): Promise<any> => {
     const res = await httpClient.get(API_ROUTES.ACCOUNT);
@@ -817,7 +925,7 @@ export const api = {
     return res.data;
   },
 
-  // Catalog APIs
+  // Catalog APIs with fast memory cache
   browseCatalog: async (params: {
     category?: string;
     subCategory?: string;
@@ -830,8 +938,17 @@ export const api = {
     sort?: string;
     page?: number;
     limit?: number;
-  }): Promise<{ products: Product[]; total: number; page: number; limit: number; totalPages: number; lastUpdated: string }> => {
+  }, refresh = false): Promise<{ products: Product[]; total: number; page: number; limit: number; totalPages: number; lastUpdated: string }> => {
+    const cacheKey = `browse:${JSON.stringify(params)}`;
+    if (!refresh) {
+      const cached = fastClientCache.get<any>(cacheKey);
+      if (cached) return cached;
+    }
+
     const res = await httpClient.get('/api/catalog/browse', { params });
+    if (res.data) {
+      fastClientCache.set(cacheKey, res.data);
+    }
     return res.data;
   },
 
@@ -849,18 +966,41 @@ export const api = {
     page?: number;
     limit?: number;
   }): Promise<{ products: Product[]; total: number; page: number; limit: number; totalPages: number; lastUpdated: string }> => {
+    const cacheKey = `searchCat:${JSON.stringify(params)}`;
+    const cached = fastClientCache.get<any>(cacheKey);
+    if (cached) return cached;
+
     const res = await httpClient.get('/api/catalog/search', { params });
+    if (res.data) {
+      fastClientCache.set(cacheKey, res.data);
+    }
     return res.data;
   },
 
   getTopDeals: async (category?: string, limit?: number): Promise<Product[]> => {
+    const cacheKey = `deals:${category || 'all'}:${limit || 8}`;
+    const cached = fastClientCache.get<Product[]>(cacheKey);
+    if (cached) return cached;
+
     const res = await httpClient.get('/api/catalog/top-deals', { params: { category, limit } });
-    return res.data?.deals || [];
+    const deals = res.data?.deals || [];
+    if (deals.length > 0) {
+      fastClientCache.set(cacheKey, deals);
+    }
+    return deals;
   },
 
   getCatalogBrands: async (category?: string): Promise<{ brand: string; count: number }[]> => {
+    const cacheKey = `brands:${category || 'all'}`;
+    const cached = fastClientCache.get<{ brand: string; count: number }[]>(cacheKey);
+    if (cached) return cached;
+
     const res = await httpClient.get('/api/catalog/brands', { params: { category } });
-    return res.data?.brands || [];
+    const brands = res.data?.brands || [];
+    if (brands.length > 0) {
+      fastClientCache.set(cacheKey, brands);
+    }
+    return brands;
   },
 
   getCatalogFilters: async (category?: string, subCategory?: string): Promise<any> => {

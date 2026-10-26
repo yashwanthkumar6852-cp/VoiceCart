@@ -35,8 +35,8 @@ import { DashboardHeroBanner } from './components/dashboard/DashboardHeroBanner'
 import { CategoryQuickStrip } from './components/dashboard/CategoryQuickStrip';
 import { DashboardFeaturedProducts } from './components/dashboard/DashboardFeaturedProducts';
 import { DashboardPromoBanner } from './components/dashboard/DashboardPromoBanner';
-import { DashboardTopCategories } from './components/dashboard/DashboardTopCategories';
 import { DashboardPopularBrands } from './components/dashboard/DashboardPopularBrands';
+import { DashboardExploreSection } from './components/dashboard/DashboardExploreSection';
 import { DashboardRightSidebar } from './components/dashboard/DashboardRightSidebar';
 import { useAuth } from './context/AuthContext';
 import { PendingAuthAction } from './types/auth';
@@ -1457,6 +1457,7 @@ export const App: React.FC = () => {
                     document.getElementById('navbar-voice-mic-btn')) as HTMLButtonElement | null;
                   if (micBtn) micBtn.click();
                 }}
+                onNavigateRoute={navigate}
               />
 
               {/* 2. Quick Category Horizontal Pills */}
@@ -1492,6 +1493,17 @@ export const App: React.FC = () => {
                   handleSearch(brand);
                 }}
                 onViewAll={() => navigate('/categories')}
+              />
+
+              {/* 5. Explore Products & Popular Mobiles */}
+              <DashboardExploreSection
+                onAddToCart={handleAddToCart}
+                onSelectProduct={(p) => {
+                  setSelectedProduct(p);
+                  navigate(`/product/${encodeURIComponent(p.store)}/${encodeURIComponent(p.productId)}`);
+                }}
+                onNavigateRoute={navigate}
+                onSelectCategory={handleSelectCategory}
               />
             </div>
           )}

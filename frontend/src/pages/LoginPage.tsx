@@ -606,20 +606,44 @@ export const LoginPage: React.FC<Props> = ({
               {errorMsg && (
                 <div
                   style={{
-                    background: 'rgba(239, 68, 68, 0.1)',
+                    background: 'rgba(239, 68, 68, 0.08)',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
                     color: '#ef4444',
-                    padding: '10px 14px',
+                    padding: '12px 14px',
                     borderRadius: '8px',
                     fontSize: '0.85rem',
                     marginBottom: '16px',
                     display: 'flex',
-                    alignItems: 'center',
+                    flexDirection: 'column',
                     gap: '8px'
                   }}
                 >
-                  <AlertCircle size={16} />
-                  <span>{errorMsg}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                    <span style={{ lineHeight: 1.4 }}>{errorMsg}</span>
+                  </div>
+                  {errorMsg.toLowerCase().includes('otp') && (
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={handleSendOtp}
+                      style={{
+                        alignSelf: 'flex-start',
+                        background: '#1877f2',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        marginTop: '4px',
+                        boxShadow: '0 1px 4px rgba(24, 119, 242, 0.25)'
+                      }}
+                    >
+                      📲 Log in with OTP instead
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -866,46 +890,75 @@ export const LoginPage: React.FC<Props> = ({
                       </div>
 
                       <div style={{ display: 'flex', gap: '10px' }}>
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={handleSendOtp}
-                          style={{
-                            flex: 1,
-                            padding: '14px',
-                            background: '#1877f2',
-                            border: 'none',
-                            borderRadius: '8px',
-                            color: '#ffffff',
-                            fontSize: '1rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxShadow: '0 2px 8px rgba(24, 119, 242, 0.3)'
-                          }}
-                        >
-                          {loading ? <RefreshCw size={20} className="mic-active-pulse" /> : t.loginWithOtpBtn}
-                        </button>
+                        {password ? (
+                          <>
+                            <button
+                              type="submit"
+                              disabled={loading}
+                              style={{
+                                flex: 1,
+                                padding: '14px',
+                                background: '#1877f2',
+                                border: 'none',
+                                borderRadius: '8px',
+                                color: '#ffffff',
+                                fontSize: '1rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                boxShadow: '0 2px 8px rgba(24, 119, 242, 0.3)'
+                              }}
+                            >
+                              {loading ? <RefreshCw size={20} className="mic-active-pulse" /> : t.loginBtn}
+                            </button>
 
-                        {password && (
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={handleSendOtp}
+                              style={{
+                                padding: '14px 16px',
+                                background: 'rgba(24, 119, 242, 0.08)',
+                                border: '1px solid rgba(24, 119, 242, 0.25)',
+                                borderRadius: '8px',
+                                color: '#1877f2',
+                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              {t.loginWithOtpBtn}
+                            </button>
+                          </>
+                        ) : (
                           <button
-                            type="submit"
+                            type="button"
                             disabled={loading}
+                            onClick={handleSendOtp}
                             style={{
-                              padding: '14px 18px',
-                              background: 'rgba(24, 119, 242, 0.1)',
-                              border: '1px solid rgba(24, 119, 242, 0.3)',
+                              flex: 1,
+                              padding: '14px',
+                              background: '#1877f2',
+                              border: 'none',
                               borderRadius: '8px',
-                              color: '#1877f2',
-                              fontSize: '0.9rem',
+                              color: '#ffffff',
+                              fontSize: '1rem',
                               fontWeight: 700,
-                              cursor: 'pointer'
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              boxShadow: '0 2px 8px rgba(24, 119, 242, 0.3)'
                             }}
                           >
-                            {t.loginBtn}
+                            {loading ? <RefreshCw size={20} className="mic-active-pulse" /> : t.loginWithOtpBtn}
                           </button>
                         )}
                       </div>
@@ -1226,15 +1279,17 @@ export const LoginPage: React.FC<Props> = ({
           borderTop: '1px solid var(--border-color, #dadde1)',
           paddingTop: '16px',
           display: 'flex',
-          flexWrap: 'wrap',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          fontSize: '0.78rem',
-          color: 'var(--text-muted, #8a8d91)'
+          justifyContent: 'center',
+          gap: '10px',
+          fontSize: '0.8rem',
+          color: 'var(--text-muted, #8a8d91)',
+          textAlign: 'center',
+          boxSizing: 'border-box'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
           <Globe size={14} />
           {[
             { code: 'en', label: 'English' },
@@ -1247,10 +1302,11 @@ export const LoginPage: React.FC<Props> = ({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: language === item.code ? '#1877f2' : 'var(--text-muted, #8a8d91)',
+                color: language === item.code ? '#2563eb' : 'var(--text-muted, #8a8d91)',
                 fontWeight: language === item.code ? 700 : 500,
                 cursor: 'pointer',
-                padding: '2px 4px'
+                padding: '2px 6px',
+                borderRadius: '4px'
               }}
             >
               {item.label}
@@ -1258,19 +1314,48 @@ export const LoginPage: React.FC<Props> = ({
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            color: 'var(--text-muted, #8a8d91)'
+          }}
+        >
           <button
             onClick={() => onNavigate('/terms')}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted, #8a8d91)', cursor: 'pointer' }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted, #8a8d91)',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#2563eb')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted, #8a8d91)')}
           >
             {t.terms}
           </button>
+          <span>•</span>
           <button
             onClick={() => onNavigate('/privacy')}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted, #8a8d91)', cursor: 'pointer' }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted, #8a8d91)',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#2563eb')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted, #8a8d91)')}
           >
             {t.privacy}
           </button>
+          <span>•</span>
           <span>VoiceCart India © 2026</span>
         </div>
       </footer>

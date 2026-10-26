@@ -356,7 +356,7 @@ export const SignupPage: React.FC<Props> = ({
     const cleanId = identifier.trim();
     const fullName = `${firstName.trim()} ${surname.trim()}`.trim();
     try {
-      const res = await verifyOtp(cleanId, enteredOtp, fullName, preferredLang);
+      const res = await verifyOtp(cleanId, enteredOtp, fullName, preferredLang, true, password);
       if (res.success) {
         setSuccessMsg(t.successWelcome(firstName));
         setTimeout(() => onNavigate('/'), 1200);
@@ -387,16 +387,17 @@ export const SignupPage: React.FC<Props> = ({
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: 'var(--bg-main, #f0f2f5)',
+        backgroundColor: 'var(--bg-dark, #f1f5f9)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        padding: '24px 16px',
+        padding: 'clamp(16px, 3vw, 24px) 16px',
+        boxSizing: 'border-box',
         fontFamily: language === 'kn' ? "'Noto Sans Kannada', sans-serif" : "'Inter', sans-serif"
       }}
     >
       {/* Top VoiceCart Header Logo */}
-      <div style={{ textAlign: 'center', padding: '16px 0' }}>
+      <div style={{ textAlign: 'center', padding: '12px 0 16px' }}>
         <div
           onClick={() => onNavigate('/')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
@@ -410,7 +411,7 @@ export const SignupPage: React.FC<Props> = ({
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
-              boxShadow: '0 4px 15px rgba(24, 119, 242, 0.25)'
+              boxShadow: '0 4px 15px rgba(37, 99, 235, 0.25)'
             }}
           >
             <img
@@ -419,14 +420,14 @@ export const SignupPage: React.FC<Props> = ({
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1877f2', margin: 0 }}>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#2563eb', margin: 0 }}>
             Voice<span style={{ color: '#06b6d4' }}>Cart</span>
           </h1>
         </div>
       </div>
 
-      {/* Main Centered Facebook-Style Card */}
-      <div style={{ maxWidth: '440px', width: '100%', margin: '0 auto' }}>
+      {/* Main Centered Modern Card */}
+      <div style={{ maxWidth: '440px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         {pendingNotice && (
           <div
             style={{
@@ -439,7 +440,8 @@ export const SignupPage: React.FC<Props> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              marginBottom: '16px'
+              marginBottom: '16px',
+              boxSizing: 'border-box'
             }}
           >
             <AlertCircle size={16} />
@@ -450,10 +452,12 @@ export const SignupPage: React.FC<Props> = ({
         <div
           style={{
             background: 'var(--bg-card, #ffffff)',
-            borderRadius: '16px',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05)',
-            padding: '24px',
-            border: '1px solid var(--border-color, #e4e6eb)'
+            borderRadius: '18px',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04)',
+            padding: 'clamp(20px, 5vw, 28px)',
+            border: '1px solid var(--border-color, #e2e8f0)',
+            boxSizing: 'border-box',
+            width: '100%'
           }}
         >
           {/* Card Title & Subtitle */}
@@ -533,7 +537,15 @@ export const SignupPage: React.FC<Props> = ({
             /* SIGNUP FORM */
             <form onSubmit={handleSignupSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {/* Name Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '12px',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}
+              >
                 <input
                   type="text"
                   required
@@ -542,6 +554,9 @@ export const SignupPage: React.FC<Props> = ({
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder={t.firstName}
                   style={{
+                    width: '100%',
+                    minWidth: 0,
+                    maxWidth: '100%',
                     padding: '12px 14px',
                     fontSize: '0.95rem',
                     borderRadius: '8px',
@@ -549,7 +564,16 @@ export const SignupPage: React.FC<Props> = ({
                     background: 'var(--bg-input, #f5f6f7)',
                     color: 'var(--text-main, #1c1e21)',
                     outline: 'none',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#2563eb';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-color, #ccd0d5)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 />
                 <input
@@ -558,6 +582,9 @@ export const SignupPage: React.FC<Props> = ({
                   onChange={(e) => setSurname(e.target.value)}
                   placeholder={t.surname}
                   style={{
+                    width: '100%',
+                    minWidth: 0,
+                    maxWidth: '100%',
                     padding: '12px 14px',
                     fontSize: '0.95rem',
                     borderRadius: '8px',
@@ -565,7 +592,16 @@ export const SignupPage: React.FC<Props> = ({
                     background: 'var(--bg-input, #f5f6f7)',
                     color: 'var(--text-main, #1c1e21)',
                     outline: 'none',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#2563eb';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-color, #ccd0d5)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 />
               </div>
@@ -579,6 +615,8 @@ export const SignupPage: React.FC<Props> = ({
                 placeholder={t.identifier}
                 style={{
                   width: '100%',
+                  minWidth: 0,
+                  maxWidth: '100%',
                   padding: '12px 14px',
                   fontSize: '0.95rem',
                   borderRadius: '8px',
@@ -586,13 +624,22 @@ export const SignupPage: React.FC<Props> = ({
                   background: 'var(--bg-input, #f5f6f7)',
                   color: 'var(--text-main, #1c1e21)',
                   outline: 'none',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#2563eb';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.15)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-color, #ccd0d5)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               />
 
               {/* Password */}
-              <div>
-                <div style={{ position: 'relative' }}>
+              <div style={{ width: '100%', boxSizing: 'border-box' }}>
+                <div style={{ position: 'relative', width: '100%' }}>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
@@ -601,6 +648,8 @@ export const SignupPage: React.FC<Props> = ({
                     placeholder={t.newPassword}
                     style={{
                       width: '100%',
+                      minWidth: 0,
+                      maxWidth: '100%',
                       padding: '12px 42px 12px 14px',
                       fontSize: '0.95rem',
                       borderRadius: '8px',
@@ -608,7 +657,16 @@ export const SignupPage: React.FC<Props> = ({
                       background: 'var(--bg-input, #f5f6f7)',
                       color: 'var(--text-main, #1c1e21)',
                       outline: 'none',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#2563eb';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.15)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border-color, #ccd0d5)';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
                   <button
@@ -622,7 +680,11 @@ export const SignupPage: React.FC<Props> = ({
                       background: 'transparent',
                       border: 'none',
                       color: 'var(--text-muted, #8a8d91)',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -661,21 +723,35 @@ export const SignupPage: React.FC<Props> = ({
               </div>
 
               {/* Date of Birth Dropdowns */}
-              <div>
+              <div style={{ width: '100%', boxSizing: 'border-box' }}>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary, #65676b)', marginBottom: '4px' }}>
                   {t.dobLabel}
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1.2fr', gap: '8px' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: '8px',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                >
                   <select
                     value={birthDay}
                     onChange={(e) => setBirthDay(e.target.value)}
                     style={{
-                      padding: '10px',
+                      width: '100%',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      padding: '10px 6px',
                       borderRadius: '8px',
                       border: '1px solid var(--border-color, #ccd0d5)',
                       background: 'var(--bg-input, #ffffff)',
                       color: 'var(--text-main, #1c1e21)',
-                      fontSize: '0.9rem'
+                      fontSize: '0.88rem',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      cursor: 'pointer'
                     }}
                   >
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
@@ -687,12 +763,18 @@ export const SignupPage: React.FC<Props> = ({
                     value={birthMonth}
                     onChange={(e) => setBirthMonth(e.target.value)}
                     style={{
-                      padding: '10px',
+                      width: '100%',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      padding: '10px 6px',
                       borderRadius: '8px',
                       border: '1px solid var(--border-color, #ccd0d5)',
                       background: 'var(--bg-input, #ffffff)',
                       color: 'var(--text-main, #1c1e21)',
-                      fontSize: '0.9rem'
+                      fontSize: '0.88rem',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      cursor: 'pointer'
                     }}
                   >
                     {[
@@ -707,12 +789,18 @@ export const SignupPage: React.FC<Props> = ({
                     value={birthYear}
                     onChange={(e) => setBirthYear(e.target.value)}
                     style={{
-                      padding: '10px',
+                      width: '100%',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      padding: '10px 6px',
                       borderRadius: '8px',
                       border: '1px solid var(--border-color, #ccd0d5)',
                       background: 'var(--bg-input, #ffffff)',
                       color: 'var(--text-main, #1c1e21)',
-                      fontSize: '0.9rem'
+                      fontSize: '0.88rem',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      cursor: 'pointer'
                     }}
                   >
                     {yearOptions.map((y) => (
@@ -723,87 +811,117 @@ export const SignupPage: React.FC<Props> = ({
               </div>
 
               {/* Gender Selection */}
-              <div>
+              <div style={{ width: '100%', boxSizing: 'border-box' }}>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary, #65676b)', marginBottom: '4px' }}>
                   {t.genderLabel}
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: '8px',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                >
                   {[
                     { id: 'female', label: t.female },
                     { id: 'male', label: t.male },
                     { id: 'custom', label: t.custom }
-                  ].map((g) => (
-                    <label
-                      key={g.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color, #ccd0d5)',
-                        background: 'var(--bg-input, #ffffff)',
-                        color: 'var(--text-main, #1c1e21)',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <span>{g.label}</span>
-                      <input
-                        type="radio"
-                        name="gender"
-                        value={g.id}
-                        checked={gender === g.id}
-                        onChange={() => setGender(g.id as any)}
-                      />
-                    </label>
-                  ))}
+                  ].map((g) => {
+                    const isSelected = gender === g.id;
+                    return (
+                      <label
+                        key={g.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 10px',
+                          borderRadius: '8px',
+                          border: isSelected ? '1.5px solid #2563eb' : '1px solid var(--border-color, #ccd0d5)',
+                          background: isSelected ? 'rgba(37, 99, 235, 0.05)' : 'var(--bg-input, #ffffff)',
+                          color: isSelected ? '#2563eb' : 'var(--text-main, #1c1e21)',
+                          fontSize: '0.85rem',
+                          fontWeight: isSelected ? 600 : 500,
+                          cursor: 'pointer',
+                          width: '100%',
+                          minWidth: 0,
+                          boxSizing: 'border-box',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.label}</span>
+                        <input
+                          type="radio"
+                          name="gender"
+                          value={g.id}
+                          checked={isSelected}
+                          onChange={() => setGender(g.id as any)}
+                          style={{ accentColor: '#2563eb', cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }}
+                        />
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Preferred Language & Terms */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.8rem', color: 'var(--text-secondary, #65676b)', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     required
                     checked={agreeTerms}
                     onChange={(e) => setAgreeTerms(e.target.checked)}
-                    style={{ marginTop: '2px' }}
+                    style={{ marginTop: '2px', accentColor: '#2563eb', cursor: 'pointer' }}
                   />
                   <span>
                     By signing up, you agree to our{' '}
-                    <span onClick={(e) => { e.preventDefault(); onNavigate('/terms'); }} style={{ color: '#1877f2', textDecoration: 'underline' }}>
+                    <span onClick={(e) => { e.preventDefault(); onNavigate('/terms'); }} style={{ color: '#2563eb', textDecoration: 'underline' }}>
                       Terms
                     </span>{' '}
                     and{' '}
-                    <span onClick={(e) => { e.preventDefault(); onNavigate('/privacy'); }} style={{ color: '#1877f2', textDecoration: 'underline' }}>
+                    <span onClick={(e) => { e.preventDefault(); onNavigate('/privacy'); }} style={{ color: '#2563eb', textDecoration: 'underline' }}>
                       Privacy Policy
                     </span>.
                   </span>
                 </label>
               </div>
 
-              {/* Submit Button (Green) */}
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
                 style={{
                   width: '100%',
                   padding: '14px',
-                  background: '#00a400',
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   color: '#ffffff',
-                  fontSize: '1.15rem',
+                  fontSize: '1.05rem',
                   fontWeight: 700,
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 2px 8px rgba(0, 164, 0, 0.35)',
-                  marginTop: '6px'
+                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                  marginTop: '8px',
+                  transition: 'all 0.2s ease',
+                  opacity: loading ? 0.7 : 1,
+                  boxSizing: 'border-box'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(37, 99, 235, 0.45)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(37, 99, 235, 0.35)';
                 }}
               >
                 {loading ? <RefreshCw size={20} className="mic-active-pulse" /> : t.signUpBtn}
@@ -817,10 +935,17 @@ export const SignupPage: React.FC<Props> = ({
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: '#1877f2',
-                    fontSize: '0.9rem',
+                    color: '#2563eb',
+                    fontSize: '0.92rem',
                     fontWeight: 600,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    transition: 'color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#1d4ed8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#2563eb';
                   }}
                 >
                   {t.alreadyAccount}
@@ -832,10 +957,10 @@ export const SignupPage: React.FC<Props> = ({
                   style={{
                     width: '100%',
                     padding: '11px',
-                    background: 'rgba(99, 102, 241, 0.08)',
-                    border: '1.5px dashed rgba(99, 102, 241, 0.4)',
+                    background: 'rgba(37, 99, 235, 0.08)',
+                    border: '1.5px dashed rgba(37, 99, 235, 0.4)',
                     borderRadius: '8px',
-                    color: '#4f46e5',
+                    color: '#2563eb',
                     fontSize: '0.9rem',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -844,7 +969,14 @@ export const SignupPage: React.FC<Props> = ({
                     justifyContent: 'center',
                     gap: '6px',
                     transition: 'all 0.2s ease',
-                    marginTop: '4px'
+                    marginTop: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(37, 99, 235, 0.14)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(37, 99, 235, 0.08)';
                   }}
                 >
                   <span>⚡ 1-Click Demo Login</span>
@@ -940,7 +1072,16 @@ export const SignupPage: React.FC<Props> = ({
               />
 
               {/* 6 OTP Inputs */}
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }} onPaste={handleOtpPaste}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 'clamp(4px, 2vw, 8px)',
+                  justifyContent: 'center',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}
+                onPaste={handleOtpPaste}
+              >
                 {otpValues.map((val, idx) => (
                   <input
                     key={idx}
@@ -952,16 +1093,26 @@ export const SignupPage: React.FC<Props> = ({
                     onChange={(e) => handleOtpChange(idx, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                     style={{
-                      width: '46px',
-                      height: '52px',
+                      width: 'clamp(36px, 11vw, 48px)',
+                      height: 'clamp(44px, 13vw, 54px)',
                       textAlign: 'center',
-                      fontSize: '1.4rem',
+                      fontSize: '1.3rem',
                       fontWeight: 700,
                       borderRadius: '8px',
-                      border: val ? '2px solid #1877f2' : '2px solid var(--border-color, #ccd0d5)',
+                      border: val ? '2px solid #2563eb' : '1.5px solid var(--border-color, #ccd0d5)',
                       background: 'var(--bg-input, #ffffff)',
                       color: 'var(--text-main, #1c1e21)',
-                      outline: 'none'
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#2563eb';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.15)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = val ? '#2563eb' : 'var(--border-color, #ccd0d5)';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
                 ))}
@@ -974,7 +1125,7 @@ export const SignupPage: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={handleSignupSubmit}
-                    style={{ background: 'transparent', border: 'none', color: '#1877f2', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                    style={{ background: 'transparent', border: 'none', color: '#2563eb', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                   >
                     {t.resendNow}
                   </button>
@@ -990,13 +1141,21 @@ export const SignupPage: React.FC<Props> = ({
                 style={{
                   width: '100%',
                   padding: '14px',
-                  background: '#00a400',
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   color: '#ffffff',
                   fontSize: '1.05rem',
                   fontWeight: 700,
-                  cursor: 'pointer'
+                  cursor: loading || otpValues.some((d) => d === '') ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                  transition: 'all 0.2s ease',
+                  opacity: loading || otpValues.some((d) => d === '') ? 0.6 : 1,
+                  boxSizing: 'border-box'
                 }}
               >
                 {loading ? <RefreshCw size={18} className="mic-active-pulse" /> : t.verifyBtn}
@@ -1015,15 +1174,17 @@ export const SignupPage: React.FC<Props> = ({
           borderTop: '1px solid var(--border-color, #dadde1)',
           paddingTop: '16px',
           display: 'flex',
-          flexWrap: 'wrap',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          fontSize: '0.78rem',
-          color: 'var(--text-muted, #8a8d91)'
+          justifyContent: 'center',
+          gap: '10px',
+          fontSize: '0.8rem',
+          color: 'var(--text-muted, #8a8d91)',
+          textAlign: 'center',
+          boxSizing: 'border-box'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
           <Globe size={14} />
           {[
             { code: 'en', label: 'English' },
@@ -1036,10 +1197,11 @@ export const SignupPage: React.FC<Props> = ({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: language === item.code ? '#1877f2' : 'var(--text-muted, #8a8d91)',
+                color: language === item.code ? '#2563eb' : 'var(--text-muted, #8a8d91)',
                 fontWeight: language === item.code ? 700 : 500,
                 cursor: 'pointer',
-                padding: '2px 4px'
+                padding: '2px 6px',
+                borderRadius: '4px'
               }}
             >
               {item.label}
@@ -1047,19 +1209,48 @@ export const SignupPage: React.FC<Props> = ({
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            color: 'var(--text-muted, #8a8d91)'
+          }}
+        >
           <button
             onClick={() => onNavigate('/terms')}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted, #8a8d91)', cursor: 'pointer' }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted, #8a8d91)',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#2563eb')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted, #8a8d91)')}
           >
             Terms
           </button>
+          <span>•</span>
           <button
             onClick={() => onNavigate('/privacy')}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted, #8a8d91)', cursor: 'pointer' }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted, #8a8d91)',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#2563eb')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted, #8a8d91)')}
           >
             Privacy
           </button>
+          <span>•</span>
           <span>VoiceCart India © 2026</span>
         </div>
       </footer>

@@ -39,7 +39,7 @@ export interface AuthContextType {
   setPendingAction: (action: PendingAuthAction | null) => void;
   executePendingAction: () => Promise<void>;
   sendOtp: (req: string | { identifier?: string; userId?: string }) => Promise<{ success: boolean; message?: string; identifier?: string; maskedIdentifier?: string; resendCooldownSeconds?: number; demoOtp?: string; error?: string | null }>;
-  verifyOtp: (identifier: string, otp: string, fullName?: string, preferredLanguage?: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string | null; isNewUser?: boolean }>;
+  verifyOtp: (identifier: string, otp: string, fullName?: string, preferredLanguage?: string, rememberMe?: boolean, password?: string) => Promise<{ success: boolean; error?: string | null; isNewUser?: boolean }>;
   checkOtpStatus: (identifier: string) => Promise<{ verified: boolean }>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: string | null }>;
   signUp: (params: {

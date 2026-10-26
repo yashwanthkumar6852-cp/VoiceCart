@@ -24,12 +24,14 @@ import {
   Activity,
   Phone,
   Mail,
-  RefreshCw
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 import { OrderRecord, OrderStatus, OrderItem, StoreName } from '../types';
 import { api } from '../services/api';
 import { generateAndPrintReceipt } from '../utils/receiptGenerator';
 import { CancelOrderModal, OrderSupportModal } from '../components/orders/OrdersModals';
+import { PaymentModal } from '../components/PaymentModal';
 import { SupportedLanguage } from '../i18n/translations';
 import { ProductImage } from '../components/ProductImage';
 
@@ -55,6 +57,7 @@ export const OrderDetailPage: React.FC<Props> = ({
   const [copiedId, setCopiedId] = useState<boolean>(false);
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [showSupportModal, setShowSupportModal] = useState<boolean>(false);
+  const [showPayModal, setShowPayModal] = useState<boolean>(false);
   const [reorderingItemId, setReorderingItemId] = useState<string | null>(null);
 
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -200,7 +203,7 @@ export const OrderDetailPage: React.FC<Props> = ({
   // ----------------------------------------------------
   if (isLoading) {
     return (
-      <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '60px' }}>
+      <div className="order-detail-root">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
           <button
             onClick={() => onNavigateRoute('/orders')}
@@ -293,9 +296,18 @@ export const OrderDetailPage: React.FC<Props> = ({
     taxes: 0,
     grandTotal: order.totalAmount
   };
+  const isCodOrder = String(order.paymentMethod || '').toUpperCase().includes('COD') ||
+    String(order.paymentDetails?.method || '').toUpperCase().includes('COD') ||
+    order.status === 'COD_PENDING';
+  const isPaid = order.paymentStatus === 'PAID' ||
+    Boolean(order.paidOnlineBeforeDelivery) ||
+    order.paymentDetails?.status === 'PAID';
+  const isCancelledOrDelivered = order.status === 'CANCELLED' || order.status === 'DELIVERED';
+  const isCodEligible = (order.isCodEligibleForPrePayment || isCodOrder) && !isPaid && !isCancelledOrDelivered;
+
   const payment = order.paymentDetails || {
     method: order.paymentMethod || 'Instant Gateway',
-    status: 'PAID',
+    status: isPaid ? 'PAID' : (isCodOrder ? 'PENDING' : 'PAID'),
     paymentId: order.paymentId || 'N/A',
     isDemo: true
   };
@@ -311,7 +323,7 @@ export const OrderDetailPage: React.FC<Props> = ({
   });
 
   return (
-    <div style={{ maxWidth: '1050px', margin: '0 auto', paddingBottom: '80px' }}>
+    <div className="order-detail-root">
       {/* Back to Orders Button */}
       <div style={{ marginBottom: '18px' }}>
         <button
@@ -499,6 +511,106 @@ export const OrderDetailPage: React.FC<Props> = ({
           )}
         </div>
       </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* 1.5 PAY BEFORE DELIVERY SECTION (FOR COD ORDERS)      */}
+      {/* ---------------------------------------------------- */}
+      {(isCodOrder || order.isCodEligibleForPrePayment || isPaid) && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '20px 24px',
+            marginBottom: '24px',
+            background: isPaid ? 'rgba(16, 185, 129, 0.08)' : 'rgba(99, 102, 241, 0.08)',
+            border: isPaid ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(99, 102, 241, 0.3)',
+            borderRadius: '16px'
+          }}
+        >
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <Zap size={20} color={isPaid ? '#10b981' : 'var(--primary)'} />
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  {isPaid ? 'Paid Online — Ready for Delivery' : 'Pay Online Before Delivery'}
+                </h3>
+                {isPaid && (
+                  <span
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      color: '#10b981',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      padding: '2px 10px',
+                      borderRadius: '12px'
+                    }}
+                  >
+                    Paid Online
+                  </span>
+                )}
+              </div>
+
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                {isPaid
+                  ? 'Payment successful! Your order will be delivered as scheduled. Zero cash collection required upon delivery.'
+                  : 'Skip doorstep cash hassle. Pay online securely now via UPI, Cards, Netbanking or Wallets before courier arrives.'}
+              </p>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px', marginTop: '14px', fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Payment Status: </span>
+                  <strong style={{ color: isPaid ? 'var(--accent-green)' : '#eab308' }}>
+                    {isPaid ? 'Paid' : 'Pending'}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Amount Due: </span>
+                  <strong style={{ color: isPaid ? 'var(--accent-green)' : 'var(--text-main)' }}>
+                    {isPaid ? '₹0 (Paid Online)' : `₹${order.totalAmount.toLocaleString()}`}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Expected Delivery: </span>
+                  <strong style={{ color: 'var(--text-secondary)' }}>
+                    {order.estimatedDeliveryDate || 'Within 2-3 Business Days'}
+                  </strong>
+                </div>
+                {isPaid && (payment.paymentId || order.paymentId) && (
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>Transaction Ref: </span>
+                    <code style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                      {payment.paymentId || order.paymentId}
+                    </code>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {isCodEligible && (
+              <button
+                onClick={() => setShowPayModal(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontSize: '0.92rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Zap size={18} />
+                <span>Pay Before Delivery</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ---------------------------------------------------- */}
       {/* 2. STATUS TIMELINE                                    */}
@@ -874,12 +986,43 @@ export const OrderDetailPage: React.FC<Props> = ({
                 <span
                   style={{
                     fontWeight: 700,
-                    color: payment.status === 'PAID' ? 'var(--accent-green)' : payment.status === 'REFUND_INITIATED' ? 'var(--accent-gold)' : 'var(--text-main)'
+                    color: isPaid ? 'var(--accent-green)' : payment.status === 'REFUND_INITIATED' ? 'var(--accent-gold)' : '#eab308'
                   }}
                 >
-                  {payment.status === 'REFUND_INITIATED' ? 'Refund Initiated' : payment.status}
+                  {isPaid ? 'Paid' : payment.status === 'REFUND_INITIATED' ? 'Refund Initiated' : 'Pending'}
                 </span>
               </div>
+
+              {order.paidOnlineBeforeDelivery && (
+                <div style={{ padding: '8px 12px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '0.78rem', fontWeight: 600 }}>
+                  ✓ Paid Online Pre-Delivery — Zero cash due on delivery
+                </div>
+              )}
+
+              {isCodEligible && (
+                <button
+                  onClick={() => setShowPayModal(true)}
+                  style={{
+                    marginTop: '8px',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    border: 'none',
+                    color: '#fff',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    fontSize: '0.84rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Zap size={16} />
+                  <span>Pay Online Before Delivery</span>
+                </button>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Payment Reference ID:</span>
@@ -1239,6 +1382,27 @@ export const OrderDetailPage: React.FC<Props> = ({
           order={order}
           isOpen={showSupportModal}
           onClose={() => setShowSupportModal(false)}
+        />
+      )}
+
+      {/* PAY BEFORE DELIVERY MODAL */}
+      {showPayModal && order && (
+        <PaymentModal
+          isOpen={showPayModal}
+          onClose={() => setShowPayModal(false)}
+          existingOrder={order}
+          mode="pay_before_delivery"
+          amount={order.totalAmount}
+          onPaymentSuccess={(updatedOrder, _payId, _method) => {
+            setOrder(updatedOrder);
+            if (showToast) {
+              showToast('Payment successful! Your order will be delivered as scheduled.');
+            }
+          }}
+          onNavigateToOrders={() => {
+            setShowPayModal(false);
+            api.getOrderById(orderId).then((o) => { if (o) setOrder(o); });
+          }}
         />
       )}
     </div>

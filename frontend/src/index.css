@@ -53,20 +53,20 @@ html.light {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-display: 'Outfit', sans-serif;
 
-  /* Color Palette - Modern Light Glass */
-  --bg-dark: #f8fafc;
+  /* Color Palette - Modern Light Clean Canvas matching Reference */
+  --bg-dark: #f1f5f9;
   --bg-card: #ffffff;
   --bg-card-hover: #f8fafc;
-  --bg-subtle: #f1f5f9;
+  --bg-subtle: #f8fafc;
   --bg-pill: rgba(15, 23, 42, 0.05);
   --bg-input: #ffffff;
   --border-color: #e2e8f0;
-  --border-subtle: #f1f5f9;
-  --border-focus: rgba(99, 102, 241, 0.6);
+  --border-subtle: #edf2f7;
+  --border-focus: rgba(37, 99, 235, 0.6);
 
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-glow: rgba(79, 70, 229, 0.25);
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-glow: rgba(37, 99, 235, 0.25);
   --secondary: #0891b2;
   --secondary-glow: rgba(8, 145, 178, 0.25);
   --accent-gold: #d97706;
@@ -82,19 +82,16 @@ html.light {
   --text-muted: #64748b;
   --text-dim: #94a3b8;
 
-  --radius-lg: 18px;
+  --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
-  --shadow-card: 0 10px 25px -5px rgba(15, 23, 42, 0.07), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.18);
-  --nav-bg: rgba(255, 255, 255, 0.98);
-  --hero-bg: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0.88) 70%);
-  --hero-border: rgba(99, 102, 241, 0.25);
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.18);
+  --nav-bg: #0a1226;
+  --hero-bg: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.12) 0%, rgba(255, 255, 255, 0.9) 70%);
+  --hero-border: rgba(37, 99, 235, 0.25);
   --img-bg: rgba(241, 245, 249, 0.7);
-  --body-gradient: 
-    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 85% 75%, rgba(6, 182, 212, 0.07) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+  --body-gradient: none;
 }
 
 * {
@@ -102,6 +99,16 @@ html.light {
   margin: 0;
   padding: 0;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease, box-shadow 0.2s ease;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-dark);
 }
 
 body {
@@ -156,12 +163,23 @@ h1, h2, h3, h4, .brand-font {
   margin: 0 auto;
   padding: 0 0 100px 0;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-dark);
 }
 
 .page-body-container {
-  max-width: 1480px;
+  max-width: 1680px;
+  width: 100%;
   margin: 0 auto;
-  padding: 16px 20px;
+  padding: 20px 24px;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .page-body-container {
+    padding: 12px 10px;
+  }
 }
 
 /* Compact Mode Density Overrides */
@@ -171,7 +189,7 @@ h1, h2, h3, h4, .brand-font {
 }
 
 [data-density="compact"] .page-body-container {
-  max-width: 1560px;
+  max-width: 1680px;
   padding: 10px 16px;
 }
 
@@ -468,4 +486,398 @@ h1, h2, h3, h4, .brand-font {
 [data-theme="dark"] input::placeholder,
 [data-theme="dark"] textarea::placeholder {
   color: var(--text-muted);
+}
+
+/* ==========================================================================
+   GLOBAL CURSOR & CARET HYGIENE
+   Remove and stop any blinking cursor / caret across the entire project screen.
+   NOTE: Preserved exclusively on search bar inputs.
+   ========================================================================== */
+
+/* 1. Universal rule: Suppress blinking caret on all elements across the entire project */
+*,
+*::before,
+*::after,
+html,
+body,
+div,
+span,
+p,
+h1, h2, h3, h4, h5, h6,
+article, section, header, footer, nav, aside, main,
+button, a, label, li, ul, ol, table, td, th,
+input,
+textarea,
+select,
+[contenteditable] {
+  caret-color: transparent !important;
+}
+
+/* 2. Prevent mouse cursor from looking like a text editor on non-editable elements */
+body,
+header,
+nav,
+footer,
+aside,
+main,
+section,
+article,
+div,
+button,
+[role="button"],
+.product-card,
+.store-badge,
+.category-quick-strip,
+.dashboard-left-sidebar,
+.dashboard-right-sidebar {
+  -webkit-user-modify: read-only;
+}
+
+/* 3. EXCEPTION: Only search bar inputs retain the active blinking text cursor */
+input.search-bar-input,
+input.search-input,
+input.voicecart-search-input,
+input[type="search"],
+input[data-search-bar="true"],
+.header-search-container input,
+.orders-filter-search-box input,
+#voicecart-main-search-input,
+#voicecart-mobile-search-input,
+#navbar-search-input {
+  caret-color: auto !important;
+}
+
+/* 4. Keep text selection allowed for reading, but without blinking caret */
+.product-title,
+.product-description,
+.product-spec,
+.order-details,
+p,
+article,
+span {
+  user-select: text;
+  -webkit-user-select: text;
+  caret-color: transparent !important;
+}
+
+/* ==========================================================================
+   Full-Width & Responsive Styling for Orders List & Order Details
+   Eliminates black/blank side gaps, perfectly fits desktop and mobile devices
+   ========================================================================== */
+.orders-page-root {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
+.orders-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.orders-status-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.orders-status-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.orders-filter-bar {
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.orders-filter-search-box {
+  position: relative;
+  flex: 1 1 300px;
+}
+
+.orders-filter-dropdowns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.order-card-panel {
+  padding: 20px 24px;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  margin-bottom: 16px;
+  border-radius: var(--radius-lg);
+}
+
+.order-card-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+
+.order-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.order-detail-root {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding-bottom: 80px;
+}
+
+/* Mobile & Tablet App Adaptations */
+@media (max-width: 768px) {
+  .orders-page-root {
+    padding-bottom: 40px;
+  }
+
+  .orders-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .orders-header-row button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .orders-filter-bar {
+    padding: 12px 14px;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .orders-filter-search-box {
+    flex: 1 1 100% !important;
+    width: 100%;
+  }
+
+  .orders-filter-dropdowns {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+    width: 100%;
+    gap: 8px !important;
+  }
+
+  .orders-filter-dropdowns select {
+    width: 100%;
+  }
+
+  .order-card-panel {
+    padding: 16px 14px;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .order-card-body {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .order-card-price-col {
+    text-align: left !important;
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 10px !important;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-subtle);
+  }
+
+  .order-card-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px !important;
+    width: 100%;
+  }
+
+  .order-card-actions button,
+  .order-card-actions a {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 10px 8px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .order-card-actions > :last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-card-panel {
+    padding: 14px 10px;
+  }
+
+  .order-card-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .order-card-actions > :last-child:nth-child(odd) {
+    grid-column: span 1;
+  }
+}
+
+/* ==========================================================================
+   VoiceCart Professional Visual Polish & Modern Glassmorphic Elevation
+   ========================================================================== */
+
+/* Enhanced Product Card Hover & Micro-Animations */
+.marketplace-grid-card,
+.product-card-container {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease !important;
+  will-change: transform, box-shadow;
+}
+
+.marketplace-grid-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--primary-glow) !important;
+}
+
+.product-card-container:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--primary-glow) !important;
+}
+
+/* Standout Glowing Product Borders */
+.card-standout-best {
+  border: 1.5px solid var(--accent-gold) !important;
+  box-shadow: 0 12px 30px -8px rgba(245, 158, 11, 0.25) !important;
+}
+
+.card-standout-cheapest {
+  border: 1.5px solid var(--accent-green) !important;
+  box-shadow: 0 12px 30px -8px rgba(16, 185, 129, 0.25) !important;
+}
+
+/* Value Savings Callout Badge */
+.savings-callout-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(5, 150, 105, 0.22) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  font-size: 0.73rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.2px;
+}
+
+[data-theme="dark"] .savings-callout-pill {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+/* Quick Prompt Suggestion Chip */
+.quick-prompt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.quick-prompt-chip:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.6);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.quick-prompt-chip:active {
+  transform: scale(0.97);
+}
+
+/* Glowing Multi-Ring Voice Waveform Animation */
+@keyframes voiceGlowRings {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7), 0 0 0 0 rgba(6, 182, 212, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(99, 102, 241, 0), 0 0 0 28px rgba(6, 182, 212, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0), 0 0 0 0 rgba(6, 182, 212, 0);
+  }
+}
+
+.voice-recording-glow {
+  animation: voiceGlowRings 1.8s infinite ease-out;
+}
+
+/* Skeleton Shimmer Loading Placeholder */
+@keyframes skeletonShimmerAnim {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-box {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmerAnim 1.5s infinite ease-in-out;
+  border-radius: var(--radius-sm);
+}
+
+[data-theme="light"] .skeleton-box {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.04) 25%,
+    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.04) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Comparison Table Row Highlight for Lowest Price */
+.comparison-winner-row {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.09) 0%, transparent 100%) !important;
+  border-left: 3px solid var(--accent-green) !important;
 }

@@ -19,11 +19,13 @@ import {
   ArrowUpDown,
   RefreshCw,
   ChevronLeft,
-  Store
+  Store,
+  Zap
 } from 'lucide-react';
 import { OrderRecord, OrderStatus, StoreName } from '../types';
 import { api } from '../services/api';
 import { AddExternalOrderModal } from '../components/orders/OrdersModals';
+import { PaymentModal } from '../components/PaymentModal';
 import { SupportedLanguage, translations } from '../i18n/translations';
 import { ProductImage } from '../components/ProductImage';
 
@@ -59,6 +61,7 @@ export const OrdersListPage: React.FC<Props> = ({
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const [payingOrder, setPayingOrder] = useState<OrderRecord | null>(null);
 
   const t = translations[language] || translations.en;
 
@@ -201,18 +204,9 @@ export const OrdersListPage: React.FC<Props> = ({
   };
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '60px' }}>
+    <div className="orders-page-root">
       {/* Top Header Section */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-          marginBottom: '24px'
-        }}
-      >
+      <div className="orders-header-row">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px', margin: 0 }}>
@@ -263,16 +257,7 @@ export const OrdersListPage: React.FC<Props> = ({
       </div>
 
       {/* STATUS TABS */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          borderBottom: '1px solid var(--border-color)',
-          paddingBottom: '12px',
-          marginBottom: '20px',
-          overflowX: 'auto'
-        }}
-      >
+      <div className="orders-status-tabs">
         {[
           { id: 'all', label: 'All Orders' },
           { id: 'in_progress', label: 'In Progress' },
@@ -307,19 +292,9 @@ export const OrdersListPage: React.FC<Props> = ({
       </div>
 
       {/* FILTER & SEARCH BAR */}
-      <div
-        className="glass-panel"
-        style={{
-          padding: '16px',
-          marginBottom: '24px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '12px'
-        }}
-      >
+      <div className="glass-panel orders-filter-bar">
         {/* Search input */}
-        <div style={{ position: 'relative', flex: '1 1 260px' }}>
+        <div className="orders-filter-search-box">
           <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
           <input
             type="text"
@@ -329,63 +304,67 @@ export const OrdersListPage: React.FC<Props> = ({
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="glass-input"
-            style={{ width: '100%', paddingLeft: '36px', fontSize: '0.85rem' }}
+            className="glass-input search-bar-input search-input"
+            data-search-bar="true"
+            style={{ width: '100%', paddingLeft: '36px', fontSize: '0.85rem', caretColor: 'auto' }}
           />
         </div>
 
-        {/* Store filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Store size={15} color="var(--text-muted)" />
-          <select
-            value={selectedStore}
-            onChange={(e) => {
-              setSelectedStore(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="glass-input"
-            style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
-          >
-            <option value="all">All Stores</option>
-            <option value="amazon">Amazon India</option>
-            <option value="flipkart">Flipkart</option>
-            <option value="meesho">Meesho</option>
-            <option value="voicecart">VoiceCart Store</option>
-          </select>
-        </div>
+        {/* Dropdowns group */}
+        <div className="orders-filter-dropdowns">
+          {/* Store filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Store size={15} color="var(--text-muted)" />
+            <select
+              value={selectedStore}
+              onChange={(e) => {
+                setSelectedStore(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="glass-input"
+              style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
+            >
+              <option value="all">All Stores</option>
+              <option value="amazon">Amazon India</option>
+              <option value="flipkart">Flipkart</option>
+              <option value="meesho">Meesho</option>
+              <option value="voicecart">VoiceCart Store</option>
+            </select>
+          </div>
 
-        {/* Date Range filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Calendar size={15} color="var(--text-muted)" />
-          <select
-            value={dateRange}
-            onChange={(e) => {
-              setDateRange(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="glass-input"
-            style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
-          >
-            <option value="all">All Time</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="6m">Last 6 Months</option>
-            <option value="2026">Year 2026</option>
-            <option value="2025">Year 2025</option>
-          </select>
-        </div>
+          {/* Date Range filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Calendar size={15} color="var(--text-muted)" />
+            <select
+              value={dateRange}
+              onChange={(e) => {
+                setDateRange(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="glass-input"
+              style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
+            >
+              <option value="all">All Time</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="6m">Last 6 Months</option>
+              <option value="2026">Year 2026</option>
+              <option value="2025">Year 2025</option>
+            </select>
+          </div>
 
-        {/* Sort filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <ArrowUpDown size={15} color="var(--text-muted)" />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="glass-input"
-            style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </select>
+          {/* Sort filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ArrowUpDown size={15} color="var(--text-muted)" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="glass-input"
+              style={{ padding: '8px 12px', fontSize: '0.82rem', background: 'var(--bg-input)' }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -510,6 +489,15 @@ export const OrdersListPage: React.FC<Props> = ({
             const isCopied = copiedOrderId === order.orderId;
             const isReordering = reorderingId === order.orderId;
 
+            const isCodOrder = String(order.paymentMethod || '').toUpperCase().includes('COD') ||
+              String(order.paymentDetails?.method || '').toUpperCase().includes('COD') ||
+              order.status === 'COD_PENDING';
+            const isPaid = order.paymentStatus === 'PAID' ||
+              Boolean(order.paidOnlineBeforeDelivery) ||
+              order.paymentDetails?.status === 'PAID';
+            const isCancelledOrDelivered = order.status === 'CANCELLED' || order.status === 'DELIVERED';
+            const isCodEligible = (order.isCodEligibleForPrePayment || isCodOrder) && !isPaid && !isCancelledOrDelivered;
+
             const formattedDate = new Date(order.orderedAt).toLocaleString('en-IN', {
               day: 'numeric',
               month: 'short',
@@ -521,13 +509,7 @@ export const OrdersListPage: React.FC<Props> = ({
             return (
               <div
                 key={order.id}
-                className="glass-panel"
-                style={{
-                  padding: '20px',
-                  transition: 'all 0.2s ease',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--bg-card)'
-                }}
+                className="glass-panel order-card-panel"
               >
                 {/* CARD TOP ROW: STORE, ORDER ID, DATE, STATUS BADGE */}
                 <div
@@ -607,14 +589,7 @@ export const OrdersListPage: React.FC<Props> = ({
                 </div>
 
                 {/* CARD BODY ROW: IMAGE, TITLES, PRICE, DELIVERY */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr) auto',
-                    gap: '16px',
-                    alignItems: 'center'
-                  }}
-                >
+                <div className="order-card-body">
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'center', minWidth: 0 }}>
                     {/* Thumbnail with +N more items label */}
                     <div style={{ position: 'relative', flexShrink: 0, width: '72px', height: '72px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-color)', background: '#fff' }}>
@@ -676,7 +651,7 @@ export const OrdersListPage: React.FC<Props> = ({
                   </div>
 
                   {/* Price Column */}
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div className="order-card-price-col" style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
                       ₹{order.totalAmount.toLocaleString()}
                     </div>
@@ -686,19 +661,121 @@ export const OrdersListPage: React.FC<Props> = ({
                   </div>
                 </div>
 
+                {/* PAY BEFORE DELIVERY SECTION FOR COD ORDERS */}
+                {(isCodOrder || order.isCodEligibleForPrePayment || isPaid) && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      marginBottom: '8px',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      background: isPaid ? 'rgba(16, 185, 129, 0.08)' : 'rgba(99, 102, 241, 0.08)',
+                      border: isPaid ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(99, 102, 241, 0.25)',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.82rem' }}>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>Payment Status: </span>
+                        <strong style={{ color: isPaid ? 'var(--accent-green)' : '#eab308' }}>
+                          {isPaid ? 'Paid' : 'Pending'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>Amount Due: </span>
+                        <strong style={{ color: isPaid ? 'var(--accent-green)' : 'var(--text-main)' }}>
+                          {isPaid ? '₹0 (Paid Online)' : `₹${order.totalAmount.toLocaleString()}`}
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>Expected Delivery: </span>
+                        <strong style={{ color: 'var(--text-secondary)' }}>
+                          {order.estimatedDeliveryDate || 'Within 2-3 Business Days'}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {isPaid ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
+                        <span
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.2)',
+                            color: '#10b981',
+                            padding: '4px 10px',
+                            borderRadius: '16px',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <CheckCircle2 size={13} /> Paid Online
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
+                          Ref: <code>{order.paymentId || order.paymentDetails?.paymentId}</code> • {order.paymentDetails?.method || 'Online'}
+                        </span>
+                      </div>
+                    ) : isCodEligible ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPayingOrder(order);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'linear-gradient(135deg, #10b981, #059669)',
+                          border: 'none',
+                          color: '#fff',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3)'
+                        }}
+                      >
+                        <Zap size={14} />
+                        <span>Pay Before Delivery</span>
+                      </button>
+                    ) : null}
+                  </div>
+                )}
+
                 {/* CARD ACTIONS ROW */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    gap: '10px',
-                    marginTop: '16px',
-                    paddingTop: '14px',
-                    borderTop: '1px solid var(--border-subtle)'
-                  }}
-                >
+                <div className="order-card-actions">
+                  {/* Pay Before Delivery Primary Action */}
+                  {isCodEligible && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPayingOrder(order);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        border: 'none',
+                        color: '#fff',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)'
+                      }}
+                    >
+                      <Zap size={14} />
+                      <span>Pay Before Delivery</span>
+                    </button>
+                  )}
+
                   {/* Reorder Button */}
                   <button
                     onClick={(e) => handleReorder(order, e)}
@@ -855,6 +932,31 @@ export const OrdersListPage: React.FC<Props> = ({
             setOrders((prev) => [newOrder, ...prev]);
             setTotalCount((c) => c + 1);
             if (showToast) showToast('External order tracked successfully!');
+          }}
+        />
+      )}
+
+      {/* Pay Before Delivery Checkout Modal */}
+      {payingOrder && (
+        <PaymentModal
+          isOpen={Boolean(payingOrder)}
+          onClose={() => setPayingOrder(null)}
+          existingOrder={payingOrder}
+          mode="pay_before_delivery"
+          amount={payingOrder.totalAmount}
+          onPaymentSuccess={(_orderRecord, _paymentId, _method) => {
+            if (showToast) {
+              showToast('Payment successful! Your order will be delivered as scheduled.');
+            }
+            fetchOrders();
+          }}
+          onNavigateToOrders={(orderId) => {
+            setPayingOrder(null);
+            if (orderId) {
+              onNavigateRoute(`/orders/${orderId}`);
+            } else {
+              fetchOrders();
+            }
           }}
         />
       )}

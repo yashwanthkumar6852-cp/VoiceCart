@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { dbClient } from '../db/dbClient';
+import { demoPaymentService } from './demoPaymentService';
 import {
   OrderRecord,
   StoreName,
@@ -28,9 +29,9 @@ export class OrderTrackerService {
    * Advances demo orders dynamically based on elapsed time since `orderedAt`
    */
   public advanceDemoTimeline(order: OrderRecord): OrderRecord {
-    // If order is cancelled, failed, or a real external store order, do not simulate timeline
-    if (order.status === 'CANCELLED' || order.status === 'FAILED' || order.isExternal) {
-      if (order.status === 'CANCELLED') {
+    // If order is cancelled, failed, delivered, or a real external store order, do not simulate timeline
+    if (order.status === 'CANCELLED' || order.status === 'FAILED' || order.status === 'DELIVERED' || order.isExternal) {
+      if (order.status === 'CANCELLED' || order.status === 'DELIVERED') {
         order.canCancel = false;
       }
       return order;
@@ -200,20 +201,48 @@ export class OrderTrackerService {
     };
 
     // 4. Payment Details
-    const methodStr = order.paymentMethod || (order.paymentId ? 'UPI / Card Gateway' : 'Cash on Delivery');
-    const isCod = methodStr.toLowerCase().includes('cod') || methodStr.toLowerCase().includes('cash');
-    const isCard = methodStr.toLowerCase().includes('card');
+    const isPaidOnline = Boolean(
+      order.paidOnlineBeforeDelivery ||
+      order.paymentDetails?.paidOnlineBeforeDelivery ||
+      (order.paidAt && order.paymentMethod?.toLowerCase() !== 'cod' && order.paymentDetails?.status === 'PAID')
+    );
+    const isCod = !isPaidOnline && Boolean(
+      (order.paymentMethod || '').toLowerCase().includes('cod') ||
+      (order.paymentMethod || '').toLowerCase().includes('cash') ||
+      order.status === 'COD_PENDING' ||
+      order.paymentDetails?.methodCode === 'cod'
+    );
+    const isCard = (order.paymentMethod || '').toLowerCase().includes('card');
 
-    order.paymentDetails = order.paymentDetails || {
-      method: methodStr,
-      methodCode: isCod ? 'cod' : isCard ? 'card' : 'upi',
-      status: order.status === 'CANCELLED' ? 'REFUND_INITIATED' : isCod ? 'COD' : 'PAID',
-      paymentId: order.paymentId || `pay_${Date.now().toString().slice(-6)}`,
-      transactionTime: order.paidAt || order.orderedAt,
-      cardBrand: isCard ? 'Visa' : undefined,
-      cardLast4: isCard ? '4242' : undefined,
-      isDemo: order.isExternal ? false : true
-    };
+    if (!order.paymentDetails) {
+      order.paymentDetails = {
+        method: isPaidOnline ? (order.paymentMethod || 'Paid Online') : isCod ? 'Cash on Delivery (COD)' : (order.paymentMethod || 'Instant Gateway'),
+        methodCode: isCod ? 'cod' : isCard ? 'card' : 'upi',
+        status: order.status === 'CANCELLED' ? 'REFUND_INITIATED' : isPaidOnline ? 'PAID' : isCod ? 'PENDING' : 'PAID',
+        paymentId: order.paymentId || (isPaidOnline ? `pay_${Date.now().toString().slice(-6)}` : undefined),
+        transactionTime: order.paidAt || order.orderedAt,
+        cardBrand: isCard ? 'Visa' : undefined,
+        cardLast4: isCard ? '4242' : undefined,
+        isDemo: order.isExternal ? false : true,
+        paidOnlineBeforeDelivery: isPaidOnline
+      };
+    } else {
+      if (isPaidOnline) {
+        order.paymentDetails.status = 'PAID';
+        order.paymentDetails.paidOnlineBeforeDelivery = true;
+      }
+    }
+
+    order.paymentStatus = order.paymentDetails.status;
+    order.paidOnlineBeforeDelivery = isPaidOnline;
+    order.isCodEligibleForPrePayment = Boolean(
+      isCod &&
+      order.paymentDetails.status !== 'PAID' &&
+      !order.paidOnlineBeforeDelivery &&
+      order.status !== 'CANCELLED' &&
+      order.status !== 'REFUNDED' &&
+      order.status !== 'DELIVERED'
+    );
 
     // 5. Delivery Address Snapshot
     if (!order.deliveryAddress) {
@@ -509,6 +538,142 @@ export class OrderTrackerService {
 
     await dbClient.saveOrder(order, userId);
     return order;
+  }
+
+  /**
+   * Process Pay Before Delivery for an eligible Cash on Delivery (COD) order.
+   * Validates user ownership, verifies payment via server-side gateway integration,
+   * updates payment status to PAID, and records transaction details while preserving delivery tracking.
+   */
+  public async processPayBeforeDelivery(params: {
+    orderId: string;
+    userId: string;
+    method: string;
+    demoResult?: 'SUCCESS' | 'FAILED' | 'PENDING';
+    failureReason?: string;
+    paymentDetails?: any;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    order: OrderRecord;
+    paymentId?: string;
+    isPaid?: boolean;
+    signature?: string;
+    method?: string;
+    amount?: number;
+    error?: string;
+  }> {
+    const { orderId, userId, method, demoResult = 'SUCCESS', failureReason, paymentDetails } = params;
+
+    // 1. Fetch order with user isolation check
+    const order = await this.getOrderById(orderId, userId);
+    if (!order) {
+      throw new Error('Order not found or you are not authorized to view this order.');
+    }
+
+    // 2. Business rules checks
+    if (order.status === 'CANCELLED') {
+      throw new Error('This order has been cancelled. Cannot proceed with payment.');
+    }
+    if (order.status === 'REFUNDED') {
+      throw new Error('This order has already been refunded.');
+    }
+    if (order.status === 'DELIVERED') {
+      throw new Error('This order has already been delivered.');
+    }
+    if (order.paidOnlineBeforeDelivery || order.paymentDetails?.status === 'PAID') {
+      throw new Error('This order has already been paid online. No further payment is required.');
+    }
+
+    // 3. Process payment confirmation with payment gateway
+    const confirmation = await demoPaymentService.processPaymentConfirmation({
+      orderId: order.orderId || order.id,
+      method: method || 'UPI',
+      amount: order.totalAmount,
+      demoResult,
+      failureReason,
+      paymentDetails
+    });
+
+    if (confirmation.status === 'FAILED') {
+      // Record failed attempt in order activity log but keep order valid and pending
+      const nowIso = new Date().toISOString();
+      order.activityLog = order.activityLog || [];
+      order.activityLog.push({
+        id: `act_${Date.now()}`,
+        title: 'Online Payment Attempt Failed',
+        description: `Pay Before Delivery attempt via ${confirmation.method} failed: ${confirmation.message}. Order remains valid for Cash on Delivery or online retry.`,
+        timestamp: nowIso,
+        type: 'payment'
+      });
+      await dbClient.saveOrder(order, userId);
+      return {
+        success: false,
+        isPaid: false,
+        error: confirmation.message || 'Payment declined by issuing bank. Please retry.',
+        message: confirmation.message || 'Payment declined by issuing bank. Please retry.',
+        order: this.enrichOrderRecord(order)
+      };
+    }
+
+    // 4. Update order to Paid Online Before Delivery
+    const nowIso = new Date().toISOString();
+    order.paymentId = confirmation.paymentId;
+    order.paymentMethod = confirmation.method;
+    order.paidAt = nowIso;
+    order.paidOnlineBeforeDelivery = true;
+    order.paymentStatus = 'PAID';
+
+    // Normalize tracking status if it was COD_PENDING
+    if (order.status === 'COD_PENDING') {
+      order.status = 'CONFIRMED' as any;
+    }
+
+    order.paymentDetails = {
+      ...(order.paymentDetails || {}),
+      method: confirmation.method,
+      methodCode: confirmation.methodCode,
+      status: 'PAID',
+      paymentId: confirmation.paymentId,
+      transactionTime: nowIso,
+      paidOnlineBeforeDelivery: true,
+      signature: confirmation.signature,
+      cardBrand: paymentDetails?.cardBrand,
+      cardLast4: paymentDetails?.cardLast4
+    };
+
+    // Update timeline and activity log
+    order.activityLog = order.activityLog || [];
+    order.activityLog.push({
+      id: `act_${Date.now()}`,
+      title: 'Pay Before Delivery Completed',
+      description: `Payment of ₹${order.totalAmount.toLocaleString()} received online via ${confirmation.method} (Ref: ${confirmation.paymentId}). Zero cash due upon delivery.`,
+      timestamp: nowIso,
+      type: 'payment'
+    });
+
+    order.timeline = order.timeline || [];
+    order.timeline.push({
+      stage: 'Paid Online',
+      description: `Paid ₹${order.totalAmount.toLocaleString()} via ${confirmation.method} (Ref: ${confirmation.paymentId}) before delivery. Zero cash due on delivery.`,
+      timestamp: nowIso,
+      completed: true,
+      current: false
+    });
+
+    const enriched = this.enrichOrderRecord(order);
+    await dbClient.saveOrder(enriched, userId);
+
+    return {
+      success: true,
+      isPaid: true,
+      message: 'Payment successful! Your order will be delivered as scheduled.',
+      order: enriched,
+      paymentId: confirmation.paymentId,
+      signature: confirmation.signature,
+      method: confirmation.method,
+      amount: order.totalAmount
+    };
   }
 
   /**

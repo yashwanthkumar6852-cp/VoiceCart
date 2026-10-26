@@ -153,26 +153,56 @@ export const ProductCard: React.FC<Props> = ({
           height: '100%'
         }}
       >
-        {/* Deal Tag / Value 365 on top-left (Shown when real discount >= 20%) */}
-        {product.discountPct >= 20 && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '10px',
-              left: '10px',
-              zIndex: 3,
-              background: '#e11d48',
-              color: '#ffffff',
-              fontSize: '11px',
-              fontWeight: 800,
-              padding: '2px 8px',
-              borderRadius: '4px',
-              letterSpacing: '0.3px'
-            }}
-          >
-            Value 365
-          </div>
-        )}
+        {/* Top-Left Standout Badges: Lowest Price, Best Overall, or Discount */}
+        <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 3, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {isLowestPrice && (
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#ffffff',
+                fontSize: '10px',
+                fontWeight: 800,
+                padding: '2px 7px',
+                borderRadius: '4px',
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(16, 185, 129, 0.4)'
+              }}
+            >
+              Lowest Price
+            </div>
+          )}
+          {isBestOverall && (
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                color: '#ffffff',
+                fontSize: '10px',
+                fontWeight: 800,
+                padding: '2px 7px',
+                borderRadius: '4px',
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(245, 158, 11, 0.4)'
+              }}
+            >
+              Best Overall
+            </div>
+          )}
+          {product.discountPct >= 20 && !isLowestPrice && !isBestOverall && (
+            <div
+              style={{
+                background: '#e11d48',
+                color: '#ffffff',
+                fontSize: '10px',
+                fontWeight: 800,
+                padding: '2px 7px',
+                borderRadius: '4px',
+                letterSpacing: '0.3px'
+              }}
+            >
+              {product.discountPct}% OFF
+            </div>
+          )}
+        </div>
 
         {/* Wishlist Heart on top-right */}
         <button
@@ -287,12 +317,12 @@ export const ProductCard: React.FC<Props> = ({
 
         {/* Price Row: Bold Dark Selling Price + Strikethrough MRP + Discount */}
         <div style={{ marginTop: 'auto', paddingTop: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
               ₹{product.price.toLocaleString('en-IN')}
             </span>
             {product.mrp > product.price && (
-              <span style={{ fontSize: '13px', color: '#878787', textDecoration: 'line-through' }}>
+              <span style={{ fontSize: '12px', color: '#878787', textDecoration: 'line-through' }}>
                 ₹{product.mrp.toLocaleString('en-IN')}
               </span>
             )}
@@ -302,6 +332,15 @@ export const ProductCard: React.FC<Props> = ({
               </span>
             )}
           </div>
+
+          {/* Savings Callout Pill */}
+          {product.mrp > product.price && (
+            <div style={{ marginTop: '3px' }}>
+              <span className="savings-callout-pill" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                Save ₹{(product.mrp - product.price).toLocaleString('en-IN')}
+              </span>
+            </div>
+          )}
 
           {/* Deal / Store Pill */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
@@ -788,11 +827,11 @@ export const ProductCard: React.FC<Props> = ({
           {/* Price & MRP Row */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
             <span style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              ₹{product.price.toLocaleString()}
+              ₹{product.price.toLocaleString('en-IN')}
             </span>
             {product.mrp > product.price && (
               <span style={{ fontSize: '0.88rem', color: 'var(--text-dim)', textDecoration: 'line-through' }}>
-                ₹{product.mrp.toLocaleString()}
+                ₹{product.mrp.toLocaleString('en-IN')}
               </span>
             )}
             {product.discountPct > 0 && (
@@ -801,6 +840,16 @@ export const ProductCard: React.FC<Props> = ({
               </span>
             )}
           </div>
+
+          {/* Instant Multi-Store Savings Callout */}
+          {product.mrp > product.price && (
+            <div style={{ marginBottom: '6px' }}>
+              <span className="savings-callout-pill">
+                <span>Save ₹{(product.mrp - product.price).toLocaleString('en-IN')}</span>
+                {isLowestPrice && <span>• Best Price</span>}
+              </span>
+            </div>
+          )}
 
           {/* Price per unit if pack > 1 */}
           {quantityInfo.unitsInPack && quantityInfo.unitsInPack > 1 && quantityInfo.pricePerUnit && (

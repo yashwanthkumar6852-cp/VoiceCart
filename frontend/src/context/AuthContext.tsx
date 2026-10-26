@@ -332,10 +332,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     otp: string,
     fullName?: string,
     preferredLanguage?: string,
-    rememberMe = true
+    rememberMe = true,
+    password?: string
   ): Promise<{ success: boolean; error?: string | null; isNewUser?: boolean }> => {
     try {
-      const res = await api.verifyOtp({ identifier, otp, fullName, preferredLanguage, rememberMe });
+      const res = await api.verifyOtp({ identifier, otp, fullName, preferredLanguage, rememberMe, password });
       if (res.success && res.session?.user) {
         const u = res.session.user;
         setUser(u);
