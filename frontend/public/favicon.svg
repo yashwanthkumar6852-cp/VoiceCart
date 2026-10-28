@@ -1,7 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="128" fill="#4f46e5"/>
-  <circle cx="256" cy="256" r="180" fill="#312e81" opacity="0.4"/>
-  <path d="M256 120c-33.137 0-60 26.863-60 60v100c0 33.137 26.863 60 60 60s60-26.863 60-60V180c0-33.137-26.863-60-60-60z" fill="#ffffff"/>
-  <path d="M160 250v30c0 53.02 42.98 96 96 96s96-42.98 96-96v-30" stroke="#a5b4fc" stroke-width="28" stroke-linecap="round"/>
-  <path d="M256 376v56M196 432h120" stroke="#a5b4fc" stroke-width="28" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="vcGradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#38bdf8" />
+      <stop offset="50%" stopColor="#2563eb" />
+      <stop offset="100%" stopColor="#8b5cf6" />
+    </linearGradient>
+    <linearGradient id="vcGradBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#0f172a" />
+      <stop offset="100%" stopColor="#1e1b4b" />
+    </linearGradient>
+    <linearGradient id="vcGradGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
+      <stop offset="100%" stopColor="#a855f7" stopOpacity="0.8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Base for App Icon / Favicon -->
+  <rect width="100" height="100" rx="26" fill="url(#vcGradBg)" />
+  <rect x="2" y="2" width="96" height="96" rx="24" stroke="rgba(255, 255, 255, 0.14)" stroke-width="2" />
+
+  <!-- Centered Icon Mark -->
+  <g transform="translate(8, 6) scale(0.84)">
+    <!-- Radiating Soundwaves -->
+    <path d="M 50 18 A 20 20 0 0 1 68 32" stroke="url(#vcGradGlow)" stroke-width="4.5" stroke-linecap="round" fill="none" />
+    <path d="M 32 32 A 20 20 0 0 1 50 18" stroke="url(#vcGradGlow)" stroke-width="4.5" stroke-linecap="round" fill="none" />
+    <path d="M 50 10 A 30 30 0 0 1 76 30" stroke="url(#vcGradGlow)" stroke-width="4.5" stroke-linecap="round" opacity="0.65" fill="none" />
+    <path d="M 24 30 A 30 30 0 0 1 50 10" stroke="url(#vcGradGlow)" stroke-width="4.5" stroke-linecap="round" opacity="0.65" fill="none" />
+
+    <!-- AI Voice Capsule -->
+    <rect x="44" y="26" width="12" height="22" rx="6" fill="url(#vcGradPrimary)" />
+    <path d="M 40 37 C 40 44 44 49 50 49 C 56 49 60 44 60 37" stroke="url(#vcGradPrimary)" stroke-width="3.5" stroke-linecap="round" fill="none" />
+    <path d="M 50 49 L 50 54 M 45 54 L 55 54" stroke="url(#vcGradPrimary)" stroke-width="3.5" stroke-linecap="round" />
+
+    <!-- Cart Body -->
+    <path d="M 16 38 H 25 L 34 68 H 76 L 86 38 H 30" stroke="url(#vcGradPrimary)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <circle cx="38" cy="80" r="5.5" fill="url(#vcGradPrimary)" />
+    <circle cx="72" cy="80" r="5.5" fill="url(#vcGradPrimary)" />
+    <circle cx="38" cy="80" r="2.5" fill="#ffffff" />
+    <circle cx="72" cy="80" r="2.5" fill="#ffffff" />
+  </g>
 </svg>

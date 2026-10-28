@@ -14,7 +14,9 @@
     "catalog:seed": "npm --prefix backend run catalog:seed",
     "catalog:status": "npm --prefix backend run catalog:status",
     "catalog:refresh-prices": "npm --prefix backend run catalog:refresh-prices",
-    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+    "build": "npm --prefix frontend run build",
+    "build:all": "npm --prefix backend run build && npm --prefix frontend run build",
+    "vercel-build": "cd frontend && npm install --no-save && npm run build"
   },
   "engines": {
     "node": ">=20.0.0",
