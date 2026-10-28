@@ -21,9 +21,11 @@ export const CrossStoreComparisonPage: React.FC<CrossStoreComparisonPageProps> =
   return (
     <div
       style={{
-        maxWidth: '1360px',
+        width: '100%',
+        maxWidth: '100%',
         margin: '0 auto',
         padding: '24px 16px 80px 16px',
+        boxSizing: 'border-box',
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
       }}
     >

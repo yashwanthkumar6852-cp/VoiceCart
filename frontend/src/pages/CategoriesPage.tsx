@@ -169,7 +169,7 @@ export const CategoriesPage: React.FC<Props> = ({
   }, [searchFilter]);
 
   return (
-    <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '16px 20px 80px 20px' }}>
+    <div style={{ width: '100%', maxWidth: '100%', margin: '0 auto', padding: '16px 20px 80px 20px', boxSizing: 'border-box' }}>
       {/* 1. Header & Breadcrumbs matching reference */}
       <div style={{ marginBottom: '22px' }}>
         <button
@@ -260,6 +260,7 @@ export const CategoriesPage: React.FC<Props> = ({
 
       {/* 2. Exactly 4-Column Grid matching reference image */}
       <div
+        className="categories-page-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',

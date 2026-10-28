@@ -89,14 +89,25 @@ export const VoiceMicButton: React.FC<Props> = ({
         const vl = v.lang.toLowerCase();
         const vn = v.name.toLowerCase();
         if (lang === 'kn') return vl.startsWith('kn') || vn.includes('kannada');
-        if (lang === 'hi') return vl.startsWith('hi') || vn.includes('hindi');
-        return vl.startsWith('en-in') || vl.startsWith('en');
+        if (lang === 'hi') return (vn.includes('google') && vl.startsWith('hi')) || vl.startsWith('hi') || vn.includes('hindi');
+        return (
+          (vn.includes('google') && (vl.startsWith('en-in') || vl.startsWith('en-us') || vl.startsWith('en-gb'))) ||
+          vn.includes('siri') ||
+          vn.includes('samantha') ||
+          vn.includes('natural') ||
+          vn.includes('jenny') ||
+          vn.includes('aria') ||
+          vn.includes('zira') ||
+          vl.startsWith('en-in') ||
+          vl.startsWith('en')
+        );
       });
 
       const utterance = new SpeechSynthesisUtterance(text);
       if (matchingVoice) utterance.voice = matchingVoice;
       utterance.lang = lang === 'kn' ? 'kn-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
-      utterance.rate = 1.0;
+      utterance.rate = 0.98;
+      utterance.pitch = 1.02;
 
       utterance.onend = () => {
         setIsSpeaking(false);

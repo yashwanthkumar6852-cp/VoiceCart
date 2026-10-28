@@ -541,7 +541,7 @@ export const AccountPage: React.FC<Props> = ({
 
   if (isLoading) {
     return (
-      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '32px 16px' }}>
+      <div style={{ width: '100%', maxWidth: '100%', margin: '0 auto', padding: '32px 16px', boxSizing: 'border-box' }}>
         <div className="glass-panel" style={{ padding: '32px', marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'center' }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--border-subtle)', animation: 'pulse 1.5s infinite' }} />
           <div style={{ flex: 1 }}>
@@ -564,7 +564,7 @@ export const AccountPage: React.FC<Props> = ({
   const recentActivity = summaryData?.recentActivity || [];
 
   return (
-    <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '24px 16px 60px' }}>
+    <div style={{ width: '100%', maxWidth: '100%', margin: '0 auto', padding: '24px 16px 60px', boxSizing: 'border-box' }}>
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -782,7 +782,7 @@ export const AccountPage: React.FC<Props> = ({
       </div>
 
       {/* MAIN TWO-COLUMN LAYOUT (DESKTOP SIDEBAR + CONTENT / MOBILE SUBPAGES) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 280px) 1fr', gap: '24px' }}>
+      <div className="account-page-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 280px) 1fr', gap: '24px' }}>
         {/* LEFT SIDEBAR NAVIGATION */}
         <div
           className="glass-panel"

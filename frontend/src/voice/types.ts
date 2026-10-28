@@ -39,6 +39,7 @@ export type VoiceAction =
   | 'login_as'
   | 'select_category'
   | 'signup'
+  | 'greeting'
   | 'chat';
 
 
@@ -60,6 +61,15 @@ export interface CommandParams {
   [key: string]: any;
 }
 
+export interface AssistantResponse {
+  spokenResponse: string;
+  displayText: string;
+  suggestionText?: string;
+  suggestedCommands?: string[];
+  mood?: 'helpful' | 'enthusiastic' | 'informative' | 'alert' | string;
+  provider?: 'gemini' | 'rule_fallback';
+}
+
 export interface CommandResult {
   action: VoiceAction;
   params: CommandParams;
@@ -67,6 +77,7 @@ export interface CommandResult {
   confidence: number;
   language: SupportedLanguage;
   reply: string;
+  assistantResponse?: AssistantResponse;
   needsClarification?: boolean;
   needsConfirmation?: boolean;
   confirmationPrompt?: string;

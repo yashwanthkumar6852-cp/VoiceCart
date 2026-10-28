@@ -13,12 +13,14 @@ import {
   RefreshCw,
   ArrowLeft,
   Sparkles,
-  ShoppingBag
+  ShoppingBag,
+  X
 } from 'lucide-react';
-import { Product } from '../types';
+import { Product, CartItem } from '../types';
 import { api } from '../lib/api';
 import { ProductImage } from '../components/ProductImage';
 import { SupportedLanguage, translations } from '../i18n/translations';
+import { FloatingVoiceAssistant } from '../components/FloatingVoiceAssistant';
 
 interface Props {
   onNavigateRoute: (route: string) => void;
@@ -26,6 +28,9 @@ interface Props {
   onToggleCompare?: (product: Product) => void;
   language?: SupportedLanguage;
   showToast?: (message: string) => void;
+  cart?: CartItem[];
+  onRemoveFromCart?: (cartItemId: string) => void;
+  onSearchPrompt?: (query: string) => void;
 }
 
 export const DealsPage: React.FC<Props> = ({
@@ -33,7 +38,10 @@ export const DealsPage: React.FC<Props> = ({
   onAddToCart,
   onToggleCompare,
   language = 'en',
-  showToast
+  showToast,
+  cart = [],
+  onRemoveFromCart,
+  onSearchPrompt
 }) => {
   const [deals, setDeals] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -41,6 +49,8 @@ export const DealsPage: React.FC<Props> = ({
   const [selectedStore, setSelectedStore] = useState<string>('all');
   const [minDiscount, setMinDiscount] = useState<number>(0);
   const [sortBy, setSortBy] = useState<'discount' | 'price_low' | 'price_high' | 'rating'>('discount');
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
 
   const t = translations[language === 'hi' || language === 'kn' ? language : 'en'] || translations.en;
@@ -179,6 +189,44 @@ export const DealsPage: React.FC<Props> = ({
               highlights: ['5G Connectivity', '5000 mAh Battery', '45W SUPERVOOC Charge', 'Ultra-clear 50MP Camera']
             },
             {
+              store: 'amazon',
+              productId: 'amz_lenovo_ideapad_slim3_i3_laptop',
+              title: 'Lenovo IdeaPad Slim 3 15.6" FHD Thin & Light Laptop (12th Gen Intel Core i3, 8GB/512GB SSD/Win 11)',
+              brand: 'Lenovo',
+              price: 34990,
+              mrp: 59990,
+              discountPct: 42,
+              rating: 4.3,
+              ratingCount: 12450,
+              imageUrl: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=500&auto=format&fit=crop&q=60',
+              productUrl: 'https://www.amazon.in/dp/amz_lenovo_ideapad_slim3_i3_laptop',
+              affiliateUrl: 'https://www.amazon.in/dp/amz_lenovo_ideapad_slim3_i3_laptop?tag=voxacart-21',
+              deliveryDays: 1,
+              shippingFee: 0,
+              seller: 'Appario Retail / Amazon Prime',
+              inStock: true,
+              highlights: ['Intel Core i3 12th Gen', '8GB DDR4 RAM', '512GB NVMe SSD', 'Rapid Charge 80% in 1Hr']
+            },
+            {
+              store: 'amazon',
+              productId: 'amz_samsung_galaxy_m34_5g_prism',
+              title: 'Samsung Galaxy M34 5G (Prism Silver, 128 GB Storage, 6 GB RAM, 6000 mAh Battery)',
+              brand: 'Samsung',
+              price: 15999,
+              mrp: 24499,
+              discountPct: 35,
+              rating: 4.2,
+              ratingCount: 48920,
+              imageUrl: 'https://m.media-amazon.com/images/I/91L9EFgKKOL._SL1500_.jpg',
+              productUrl: 'https://www.amazon.in/dp/amz_samsung_galaxy_m34_5g_prism',
+              affiliateUrl: 'https://www.amazon.in/dp/amz_samsung_galaxy_m34_5g_prism?tag=voxacart-21',
+              deliveryDays: 1,
+              shippingFee: 0,
+              seller: 'STPL Exclusive Online / Amazon Prime',
+              inStock: true,
+              highlights: ['120Hz Super AMOLED Display', '50MP No Shake Cam', '6000mAh Monster Battery', '4 Gen OS Updates']
+            },
+            {
               store: 'meesho',
               productId: 'meesho_wireless_bluetooth_neckband_bass',
               title: 'Super Bass Magnetic Wireless Bluetooth Neckband with 48Hr Playtime',
@@ -232,12 +280,44 @@ export const DealsPage: React.FC<Props> = ({
       .filter((p) => {
         // Store filter
         if (selectedStore !== 'all' && p.store !== selectedStore) return false;
-        // Category filter
-        if (selectedCategory !== 'all') {
-          const matchCat = ((p as any).category || '').toLowerCase().includes(selectedCategory.toLowerCase());
-          const matchTitle = p.title.toLowerCase().includes(selectedCategory.toLowerCase());
-          if (!matchCat && !matchTitle) return false;
+
+        // Search query filter (from voice or typing)
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchTitle = p.title.toLowerCase().includes(q);
+          const matchBrand = (p.brand || '').toLowerCase().includes(q);
+          const matchCat = ((p as any).category || '').toLowerCase().includes(q);
+          if (!matchTitle && !matchBrand && !matchCat) return false;
         }
+
+        // Category filter with intelligent aliases
+        if (selectedCategory !== 'all') {
+          const catLower = ((p as any).category || '').toLowerCase();
+          const titleLower = p.title.toLowerCase();
+          let matched = catLower.includes(selectedCategory.toLowerCase()) || titleLower.includes(selectedCategory.toLowerCase());
+          if (!matched) {
+            if (selectedCategory === 'mobiles') {
+              matched = titleLower.includes('phone') || titleLower.includes('mobile') || titleLower.includes('galaxy') || titleLower.includes('oppo') || titleLower.includes('iphone') || titleLower.includes('5g');
+            } else if (selectedCategory === 'laptops') {
+              matched = titleLower.includes('laptop') || titleLower.includes('notebook') || titleLower.includes('pavilion') || titleLower.includes('ideapad') || titleLower.includes('thinkpad');
+            } else if (selectedCategory === 'smartwatches') {
+              matched = titleLower.includes('watch') || titleLower.includes('smartwatch') || titleLower.includes('smart watch');
+            } else if (selectedCategory === 'audio') {
+              matched = titleLower.includes('earbud') || titleLower.includes('headphone') || titleLower.includes('neckband') || titleLower.includes('airdopes') || titleLower.includes('airbass') || titleLower.includes('audio');
+            } else if (selectedCategory === 'appliances') {
+              matched = titleLower.includes('appliance') || titleLower.includes('fryer') || titleLower.includes('purifier') || titleLower.includes('iron');
+            } else if (selectedCategory === 'fashion') {
+              matched = titleLower.includes('fashion') || titleLower.includes('saree') || titleLower.includes('shirt') || titleLower.includes('shoes') || titleLower.includes('bag');
+            }
+          }
+          if (!matched) return false;
+        }
+
+        // Max price filter (e.g., "Find laptops under 50000 rupees")
+        if (maxPrice !== null && p.price > maxPrice) {
+          return false;
+        }
+
         // Discount filter
         const disc = p.discountPct || (p.mrp && p.price ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0);
         if (disc < minDiscount) return false;
@@ -253,7 +333,7 @@ export const DealsPage: React.FC<Props> = ({
         if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
         return 0;
       });
-  }, [deals, selectedStore, selectedCategory, minDiscount, sortBy]);
+  }, [deals, selectedStore, selectedCategory, minDiscount, sortBy, maxPrice, searchQuery]);
 
   const categoryPills = [
     { id: 'all', label: language === 'kn' ? 'ಎಲ್ಲಾ ಡೀಲ್‌ಗಳು' : language === 'hi' ? 'सभी डील्स' : 'All Deals' },
@@ -266,7 +346,7 @@ export const DealsPage: React.FC<Props> = ({
   ];
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px 16px 80px 16px' }}>
+    <div style={{ width: '100%', maxWidth: '100%', margin: '0 auto', padding: '20px 16px 80px 16px', boxSizing: 'border-box' }}>
       {/* 1. Header & Back button */}
       <div style={{ marginBottom: '24px' }}>
         <button
@@ -501,6 +581,64 @@ export const DealsPage: React.FC<Props> = ({
               <option value="rating">Top Rated (4★+)</option>
             </select>
           </div>
+
+          {/* Active Filter Badges from Voice Commands */}
+          {(maxPrice !== null || searchQuery.trim()) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {maxPrice !== null && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(79, 70, 229, 0.12)',
+                    border: '1px solid var(--primary)',
+                    color: 'var(--primary)',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700
+                  }}
+                >
+                  <span>Max ₹{maxPrice.toLocaleString()}</span>
+                  <button
+                    type="button"
+                    onClick={() => setMaxPrice(null)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0, display: 'flex' }}
+                    title="Remove price filter"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {searchQuery.trim() && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(219, 39, 119, 0.12)',
+                    border: '1px solid #db2777',
+                    color: '#db2777',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700
+                  }}
+                >
+                  <span>Search: "{searchQuery}"</span>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0, display: 'flex' }}
+                    title="Clear search filter"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -828,6 +966,9 @@ export const DealsPage: React.FC<Props> = ({
               setSelectedCategory('all');
               setSelectedStore('all');
               setMinDiscount(0);
+              setMaxPrice(null);
+              setSearchQuery('');
+              setSortBy('discount');
             }}
             style={{
               background: 'var(--primary)',
@@ -844,6 +985,39 @@ export const DealsPage: React.FC<Props> = ({
           </button>
         </div>
       )}
+
+      {/* Smart Floating Voice Assistant (Bottom-Right: right: 25px, bottom: 100px) */}
+      <FloatingVoiceAssistant
+        deals={deals}
+        filteredDeals={filteredDeals}
+        selectedCategory={selectedCategory}
+        onSelectCategory={(cat) => setSelectedCategory(cat)}
+        selectedStore={selectedStore}
+        onSelectStore={(store) => setSelectedStore(store)}
+        minDiscount={minDiscount}
+        onSelectMinDiscount={(d) => setMinDiscount(d)}
+        sortBy={sortBy}
+        onSelectSortBy={(sort) => setSortBy(sort)}
+        maxPrice={maxPrice}
+        onSelectMaxPrice={(price) => setMaxPrice(price)}
+        searchQuery={searchQuery}
+        onSearchQuery={(q) => setSearchQuery(q)}
+        onClearFilters={() => {
+          setSelectedCategory('all');
+          setSelectedStore('all');
+          setMinDiscount(0);
+          setMaxPrice(null);
+          setSearchQuery('');
+          setSortBy('discount');
+        }}
+        onAddToCart={onAddToCart}
+        onNavigateRoute={onNavigateRoute}
+        onSearchPrompt={onSearchPrompt}
+        cart={cart}
+        onRemoveFromCart={onRemoveFromCart}
+        language={language}
+        showToast={showToast}
+      />
     </div>
   );
 };

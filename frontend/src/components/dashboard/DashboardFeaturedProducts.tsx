@@ -285,6 +285,7 @@ export const DashboardFeaturedProducts: React.FC<Props> = ({
         </div>
       ) : (
         <div
+          className="featured-products-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: itemsToDisplay.length > 5

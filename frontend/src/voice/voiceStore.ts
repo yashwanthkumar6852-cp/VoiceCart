@@ -1,6 +1,6 @@
 import { CartItem, OrderRecord, Product, SearchResponse } from '../types';
 import { SupportedLanguage } from '../i18n/translations';
-import { CommandDebugEntry, CommandParams, ConversationContext, PaymentMethodCode, VoiceAction } from './types';
+import { AssistantResponse, CommandDebugEntry, CommandParams, ConversationContext, PaymentMethodCode, VoiceAction } from './types';
 
 type Listener = () => void;
 
@@ -43,6 +43,7 @@ class VoiceStore {
     targetPrice?: number;
   } | null = null;
 
+  private lastAssistantResponse: AssistantResponse | null = null;
   private debugLogs: CommandDebugEntry[] = [];
   private showDebugPanel: boolean = false;
   private listeners: Set<Listener> = new Set();
@@ -51,7 +52,7 @@ class VoiceStore {
     try {
       const savedDebug = localStorage.getItem('voicecart_debug_panel');
       if (savedDebug === 'true') this.showDebugPanel = true;
-    } catch {}
+    } catch { }
   }
 
   public subscribe(listener: Listener): () => void {
@@ -71,6 +72,7 @@ class VoiceStore {
     activeSearch: ActiveSearchState;
     debugLogs: CommandDebugEntry[];
     showDebugPanel: boolean;
+    lastAssistantResponse: AssistantResponse | null;
   } {
     return {
       currentScreen: this.currentScreen,
@@ -84,8 +86,18 @@ class VoiceStore {
       activePaymentTab: this.activePaymentTab,
       pendingConfirmation: this.pendingConfirmation,
       debugLogs: this.debugLogs,
-      showDebugPanel: this.showDebugPanel
+      showDebugPanel: this.showDebugPanel,
+      lastAssistantResponse: this.lastAssistantResponse
     };
+  }
+
+  public getAssistantResponse(): AssistantResponse | null {
+    return this.lastAssistantResponse;
+  }
+
+  public setAssistantResponse(res: AssistantResponse | null): void {
+    this.lastAssistantResponse = res;
+    this.notify();
   }
 
   public getContext(): ConversationContext {
@@ -214,7 +226,7 @@ class VoiceStore {
     this.showDebugPanel = show;
     try {
       localStorage.setItem('voicecart_debug_panel', show ? 'true' : 'false');
-    } catch {}
+    } catch { }
     this.notify();
   }
 

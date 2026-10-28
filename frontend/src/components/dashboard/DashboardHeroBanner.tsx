@@ -871,6 +871,7 @@ export const DashboardHeroBanner: React.FC<Props> = ({
       onKeyDown={handleKeyDown}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      className="dashboard-hero-banner-root"
       style={{
         width: '100%',
         borderRadius: '24px',

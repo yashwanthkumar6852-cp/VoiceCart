@@ -89,14 +89,25 @@ class TTSService {
 
       const utterance = new SpeechSynthesisUtterance(cleanText);
 
-      // Select voice:
+      // Select voice with Siri / Google Assistant priority:
       const targetLang = lang === 'kn' ? 'kn' : lang === 'hi' ? 'hi' : 'en';
       let selectedVoice = this.voices.find((v) => {
         const vl = v.lang.toLowerCase();
         const vn = v.name.toLowerCase();
         if (targetLang === 'kn') return vl.startsWith('kn') || vn.includes('kannada');
-        if (targetLang === 'hi') return vl.startsWith('hi') || vn.includes('hindi');
-        return vl.startsWith('en-in') || vl.startsWith('en_in');
+        if (targetLang === 'hi') return vn.includes('google') && vl.startsWith('hi') || vl.startsWith('hi') || vn.includes('hindi');
+        // English: Prioritize Google Assistant / Siri / Natural sounding voices
+        return (
+          (vn.includes('google') && (vl.startsWith('en-in') || vl.startsWith('en-us') || vl.startsWith('en-gb'))) ||
+          vn.includes('siri') ||
+          vn.includes('samantha') ||
+          vn.includes('natural') ||
+          vn.includes('jenny') ||
+          vn.includes('aria') ||
+          vn.includes('zira') ||
+          vl.startsWith('en-in') ||
+          vl.startsWith('en_in')
+        );
       });
 
       // Fallback voice if specific accent not found
@@ -109,8 +120,8 @@ class TTSService {
       }
 
       utterance.lang = targetLang === 'kn' ? 'kn-IN' : targetLang === 'hi' ? 'hi-IN' : 'en-IN';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      utterance.rate = 0.98; // Natural, clear conversational assistant tempo
+      utterance.pitch = 1.02; // Warm, friendly assistant tone like Google Assistant/Siri
 
       utterance.onstart = () => {
         this.isSpeakingState = true;

@@ -1,7 +1,9 @@
 import { CartItem, OrderRecord, Product, SearchFilters } from '../types';
 import { SupportedLanguage } from '../i18n/translations';
-import { CommandParams, CommandResult, ConversationContext, PaymentMethodCode, VoiceAction } from './types';
+import { AssistantResponse, CommandParams, CommandResult, ConversationContext, PaymentMethodCode, VoiceAction } from './types';
 import { voiceStore } from './voiceStore';
+import { api } from '../lib/api';
+import { detectAndGenerateGreeting } from './greetings';
 
 export interface DispatcherHandlers {
   isAuthenticated?: boolean;
@@ -152,7 +154,7 @@ export class ActionDispatcher {
   }
 
   /**
-   * Dispatches and executes the resolved command
+   * Dispatches and executes the resolved command, then enriches with Gemini Assistant Responder
    */
   public async dispatch(
     command: CommandResult,
@@ -162,6 +164,84 @@ export class ActionDispatcher {
     spokenResponse: string;
     executionResult: string;
     status: 'success' | 'clarification' | 'confirmation_required' | 'error';
+    assistantResponse?: AssistantResponse;
+  }> {
+    const rawResult = await this.executeInternal(command, handlers, transcript);
+    const context = voiceStore.getContext();
+    const lang = command.language || context.language || 'en';
+
+    // If command already has assistantResponse attached
+    if (command.assistantResponse) {
+      voiceStore.setAssistantResponse(command.assistantResponse);
+      return {
+        ...rawResult,
+        spokenResponse: command.assistantResponse.spokenResponse || rawResult.spokenResponse,
+        assistantResponse: command.assistantResponse
+      };
+    }
+
+    // Call Gemini Assistant Responder to generate clear response & friendly suggestions
+    try {
+      const topPick = context.searchResults?.recommendation || context.searchResults?.products?.[0];
+      const assistantRes = await api.getAssistantResponse({
+        transcript,
+        action: command.action,
+        params: command.params,
+        language: lang === 'auto' ? 'en' : (lang as any),
+        executionResult: rawResult.executionResult,
+        context: {
+          currentScreen: context.currentScreen,
+          cartCount: context.cart?.length || 0,
+          hasLastOrder: !!context.lastOrder
+        },
+        searchSummary: topPick
+          ? {
+              topProduct: {
+                title: topPick.title,
+                store: topPick.store,
+                price: topPick.price,
+                rating: topPick.rating
+              },
+              totalResults: context.searchResults?.products?.length || 0
+            }
+          : undefined,
+        cartSummary: {
+          itemCount: context.cart?.length || 0,
+          totalAmount: context.cart?.reduce((acc, i) => acc + (i.product?.price || 0) * (i.quantity || 1), 0) || 0
+        },
+        orderSummary: context.lastOrder
+          ? {
+              orderId: context.lastOrder.orderId,
+              store: context.lastOrder.store,
+              status: context.lastOrder.status
+            }
+          : undefined
+      });
+
+      if (assistantRes) {
+        voiceStore.setAssistantResponse(assistantRes);
+        return {
+          ...rawResult,
+          spokenResponse: assistantRes.spokenResponse || rawResult.spokenResponse,
+          assistantResponse: assistantRes
+        };
+      }
+    } catch (e) {
+      console.warn('Gemini assistant responder enrichment error:', e);
+    }
+
+    return rawResult;
+  }
+
+  private async executeInternal(
+    command: CommandResult,
+    handlers: DispatcherHandlers,
+    transcript: string
+  ): Promise<{
+    spokenResponse: string;
+    executionResult: string;
+    status: 'success' | 'clarification' | 'confirmation_required' | 'error';
+    assistantResponse?: AssistantResponse;
   }> {
     const context = voiceStore.getContext();
     const lang = command.language || context.language || 'en';
@@ -183,8 +263,8 @@ export class ActionDispatcher {
             lang === 'kn'
               ? 'ನಿಮ್ಮ ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಆರ್ಡರ್ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಪಾವತಿ ವಿಧಾನವನ್ನು ಆಯ್ಕೆಮಾಡಿ.'
               : lang === 'hi'
-              ? 'आपकी कार्ट में जोड़ दिया गया है। कृपया अपने ऑर्डर की समीक्षा करें और भुगतान विधि चुनें।'
-              : 'Added to your cart. Please review your order and choose a payment method.';
+                ? 'आपकी कार्ट में जोड़ दिया गया है। कृपया अपने ऑर्डर की समीक्षा करें और भुगतान विधि चुनें।'
+                : 'Added to your cart. Please review your order and choose a payment method.';
 
           voiceStore.addDebugLog({
             transcript,
@@ -299,8 +379,8 @@ export class ActionDispatcher {
             lang === 'kn'
               ? `ಕ್ಷಮಿಸಿ, "${query}" ಗೆ ಯಾವುದೇ ನಿಖರ ಉತ್ಪನ್ನಗಳು ಕಂಡುಬಂದಿಲ್ಲ.`
               : lang === 'hi'
-              ? `क्षमा करें, "${query}" के लिए कोई सटीक उत्पाद नहीं मिला।`
-              : `I couldn't find "${query}" on Amazon, Flipkart or Meesho right now.`;
+                ? `क्षमा करें, "${query}" के लिए कोई सटीक उत्पाद नहीं मिला।`
+                : `I couldn't find "${query}" on Amazon, Flipkart or Meesho right now.`;
           spoken = reply;
         }
       }
@@ -338,8 +418,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? 'ದಯವಿಟ್ಟು ಮುಂದುವರಿಯಲು ಮೊದಲು ಲಾಗಿನ್ ಮಾಡಿ.'
           : lang === 'hi'
-          ? 'जारी रखने के लिए कृपया पहले लॉगिन करें।'
-          : 'Please log in first to continue.';
+            ? 'जारी रखने के लिए कृपया पहले लॉगिन करें।'
+            : 'Please log in first to continue.';
 
       if (handlers.onSavePendingVoiceCommand) {
         handlers.onSavePendingVoiceCommand(command, transcript);
@@ -392,8 +472,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? `ನಿಮ್ಮ ${lastOrder.store.toUpperCase()} ಆರ್ಡರ್ ${lastOrder.status.replace(/_/g, ' ')} ಹಂತದಲ್ಲಿದೆ.`
             : lang === 'hi'
-            ? `आपका ${lastOrder.store.toUpperCase()} ऑर्डर #${lastOrder.orderId} ${lastOrder.status.replace(/_/g, ' ')} स्थिति में है।`
-            : `Your ${lastOrder.store.toUpperCase()} order #${lastOrder.orderId} is currently ${lastOrder.status.replace(/_/g, ' ')}.`;
+              ? `आपका ${lastOrder.store.toUpperCase()} ऑर्डर #${lastOrder.orderId} ${lastOrder.status.replace(/_/g, ' ')} स्थिति में है।`
+              : `Your ${lastOrder.store.toUpperCase()} order #${lastOrder.orderId} is currently ${lastOrder.status.replace(/_/g, ' ')}.`;
       }
 
       voiceStore.addDebugLog({
@@ -468,8 +548,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `${name.kn} ಪಾವತಿ ತೆರೆಯಲಾಗಿದೆ.`
           : lang === 'hi'
-          ? `${name.hi} भुगतान विकल्प खोला गया।`
-          : `Selected ${name.en} payment.`;
+            ? `${name.hi} भुगतान विकल्प खोला गया।`
+            : `Selected ${name.en} payment.`;
 
       voiceStore.addDebugLog({
         transcript,
@@ -511,8 +591,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `${storeLabel} ${product.title.slice(0, 26)} ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ.`
           : lang === 'hi'
-          ? `${storeLabel} का ${product.title.slice(0, 26)} कार्ट में जोड़ दिया गया है।`
-          : `Added the ${storeLabel} ${product.title.slice(0, 26)} to your cart.`;
+            ? `${storeLabel} का ${product.title.slice(0, 26)} कार्ट में जोड़ दिया गया है।`
+            : `Added the ${storeLabel} ${product.title.slice(0, 26)} to your cart.`;
 
       voiceStore.addDebugLog({
         transcript,
@@ -553,8 +633,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `ದೃಢೀಕರಿಸಿ: ${cartItem.product.title.slice(0, 25)} ತೆಗೆಯಲೇ? ಮುಂದುವರಿಸಲು ಹೌದು ಎಂದು ಹೇಳಿ.`
           : lang === 'hi'
-          ? `पुष्टि करें: ${cartItem.product.title.slice(0, 25)} हटाएं? जारी रखने के लिए हाँ कहें।`
-          : `Confirm: Remove ${cartItem.product.title.slice(0, 25)}? Say yes to continue.`;
+            ? `पुष्टि करें: ${cartItem.product.title.slice(0, 25)} हटाएं? जारी रखने के लिए हाँ कहें।`
+            : `Confirm: Remove ${cartItem.product.title.slice(0, 25)}? Say yes to continue.`;
 
       voiceStore.setPendingConfirmation({
         action: 'remove_from_cart',
@@ -585,8 +665,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? 'ದೃಢೀಕರಿಸಿ: ಇಡೀ ಕಾರ್ಟ್ ಖಾಲಿ ಮಾಡಬೇಕೆ? ಮುಂದುವರಿಸಲು ಹೌದು ಎಂದು ಹೇಳಿ.'
           : lang === 'hi'
-          ? 'पुष्टि करें: क्या आप पूरी कार्ट खाली करना चाहते हैं? हाँ कहें।'
-          : 'Confirm: Clear your entire basket? Say yes to continue.';
+            ? 'पुष्टि करें: क्या आप पूरी कार्ट खाली करना चाहते हैं? हाँ कहें।'
+            : 'Confirm: Clear your entire basket? Say yes to continue.';
 
       voiceStore.setPendingConfirmation({
         action: 'clear_cart',
@@ -629,8 +709,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `ದೃಢೀಕರಿಸಿ: ${shortTitle}, ${variant}, ಪ್ರಮಾಣ ${qty}, ${storeName} ನಿಂದ ${priceStr}. ಬುಕ್ ಮಾಡಲು ಹೌದು ಎಂದು ಹೇಳಿ, ಅಥವಾ ರದ್ದು ಮಾಡಲು ಇಲ್ಲ ಎಂದು ಹೇಳಿ.`
           : lang === 'hi'
-          ? `पुष्टि करें: ${shortTitle}, ${variant}, मात्रा ${qty}, ${storeName} से ${priceStr}। बुक करने के लिए हाँ कहें, या रद्द करने के लिए नहीं कहें।`
-          : `Confirm: ${shortTitle}, ${variant}, quantity ${qty}, ${priceStr} from ${storeName}. Say yes to book, or no to cancel.`;
+            ? `पुष्टि करें: ${shortTitle}, ${variant}, मात्रा ${qty}, ${storeName} से ${priceStr}। बुक करने के लिए हाँ कहें, या रद्द करने के लिए नहीं कहें।`
+            : `Confirm: ${shortTitle}, ${variant}, quantity ${qty}, ${priceStr} from ${storeName}. Say yes to book, or no to cancel.`;
 
       voiceStore.setPendingConfirmation({
         action: 'buy',
@@ -663,8 +743,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? 'ದಯವಿಟ್ಟು ಪಾವತಿ ವಿಧಾನವನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಪಾವತಿಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ.'
           : lang === 'hi'
-          ? 'कृपया भुगतान विधि चुनें और भुगतान पूरा करें।'
-          : 'Please choose a payment method and complete the payment.';
+            ? 'कृपया भुगतान विधि चुनें और भुगतान पूरा करें।'
+            : 'Please choose a payment method and complete the payment.';
 
       voiceStore.addDebugLog({
         transcript,
@@ -690,8 +770,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? `${cartItem.product.title.slice(0, 24)} ಪ್ರಮಾಣವನ್ನು ಹೆಚ್ಚಿಸಲಾಗಿದೆ.`
             : lang === 'hi'
-            ? `${cartItem.product.title.slice(0, 24)} की मात्रा बढ़ा दी गई है।`
-            : `Increased quantity for ${cartItem.product.title.slice(0, 24)}.`;
+              ? `${cartItem.product.title.slice(0, 24)} की मात्रा बढ़ा दी गई है।`
+              : `Increased quantity for ${cartItem.product.title.slice(0, 24)}.`;
 
         return { spokenResponse: reply, executionResult: 'Increased cart item quantity', status: 'success' };
       }
@@ -715,8 +795,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? `${product.title}. ${product.store.toUpperCase()} ನಲ್ಲಿ ಬೆಲೆ ₹${product.price}. ರೇಟಿಂಗ್ ${product.rating} ಸ್ಟಾರ್ಸ್.`
             : lang === 'hi'
-            ? `${product.title}। ${product.store.toUpperCase()} पर कीमत ₹${product.price} है। रेटिंग ${product.rating} स्टार है।`
-            : `${product.title} on ${product.store.toUpperCase()} is priced at ₹${product.price.toLocaleString()} with a ${product.rating} star rating.`;
+              ? `${product.title}। ${product.store.toUpperCase()} पर कीमत ₹${product.price} है। रेटिंग ${product.rating} स्टार है।`
+              : `${product.title} on ${product.store.toUpperCase()} is priced at ₹${product.price.toLocaleString()} with a ${product.rating} star rating.`;
 
         voiceStore.addDebugLog({
           transcript,
@@ -742,8 +822,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? 'ಅಂಗಡಿ ಇದನ್ನು ಪಟ್ಟಿ ಮಾಡಿಲ್ಲ.'
             : lang === 'hi'
-            ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
-            : "The store doesn't list that.";
+              ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
+              : "The store doesn't list that.";
         return { spokenResponse: missingReply, executionResult: 'Specifications missing', status: 'success' };
       }
 
@@ -757,8 +837,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `ಮುಖ್ಯ ವಿವರಣೆಗಳು: ${highlights}.`
           : lang === 'hi'
-          ? `मुख्य स्पेसिफिकेशन्स हैं: ${highlights}।`
-          : `Key specifications are: ${highlights}.`;
+            ? `मुख्य स्पेसिफिकेशन्स हैं: ${highlights}।`
+            : `Key specifications are: ${highlights}.`;
 
       voiceStore.addDebugLog({
         transcript,
@@ -783,8 +863,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? 'ಅಂಗಡಿ ಇದನ್ನು ಪಟ್ಟಿ ಮಾಡಿಲ್ಲ.'
             : lang === 'hi'
-            ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
-            : "The store doesn't list that.";
+              ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
+              : "The store doesn't list that.";
         return { spokenResponse: missingReply, executionResult: 'Rating missing', status: 'success' };
       }
 
@@ -793,8 +873,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `${product.store.toUpperCase()} ನಲ್ಲಿ ರೇಟಿಂಗ್ ${product.rating} ಸ್ಟಾರ್ಸ್${countsText}.`
           : lang === 'hi'
-          ? `${product.store.toUpperCase()} पर इसकी रेटिंग ${product.rating} स्टार है${countsText}।`
-          : `On ${product.store.toUpperCase()}, it has a rating of ${product.rating} out of 5 stars based on ${product.ratingCount.toLocaleString()} verified ratings.`;
+            ? `${product.store.toUpperCase()} पर इसकी रेटिंग ${product.rating} स्टार है${countsText}।`
+            : `On ${product.store.toUpperCase()}, it has a rating of ${product.rating} out of 5 stars based on ${product.ratingCount.toLocaleString()} verified ratings.`;
 
       voiceStore.addDebugLog({
         transcript,
@@ -820,8 +900,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? 'ಅಂಗಡಿ ಇದನ್ನು ಪಟ್ಟಿ ಮಾಡಿಲ್ಲ.'
             : lang === 'hi'
-            ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
-            : "The store doesn't list that.";
+              ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
+              : "The store doesn't list that.";
         return { spokenResponse: missingReply, executionResult: 'Quantity missing', status: 'success' };
       }
 
@@ -830,8 +910,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `ಪ್ಯಾಕ್ ಸೈಜ್ ${pack} ಮತ್ತು ಪ್ರಸ್ತುತ ಲಭ್ಯವಿದೆ.`
           : lang === 'hi'
-          ? `पैक साइज़ ${pack} है और यह स्टॉक में उपलब्ध है।`
-          : `The pack size is ${pack} and it is currently ${stock}.`;
+            ? `पैक साइज़ ${pack} है और यह स्टॉक में उपलब्ध है।`
+            : `The pack size is ${pack} and it is currently ${stock}.`;
 
       voiceStore.addDebugLog({
         transcript,
@@ -856,8 +936,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? 'ಅಂಗಡಿ ಇದನ್ನು ಪಟ್ಟಿ ಮಾಡಿಲ್ಲ.'
             : lang === 'hi'
-            ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
-            : "The store doesn't list that.";
+              ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
+              : "The store doesn't list that.";
         return { spokenResponse: missingReply, executionResult: 'Quality score missing', status: 'success' };
       }
 
@@ -865,8 +945,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `ಗುಣಮಟ್ಟದ ಸ್ಕೋರ್ 10 ರಲ್ಲಿ ${product.quality.score}. ರೇಟಿಂಗ್‌ಗಳು ಮತ್ತು ರಿಟರ್ನ್ ನೀತಿಗಳನ್ನು ಆಧರಿಸಿದೆ.`
           : lang === 'hi'
-          ? `इसकी क्वालिटी का स्कोर 10 में से ${product.quality.score} है, जो रेटिंग और ब्रांड नीतियों पर आधारित है।`
-          : `The verified quality score is ${product.quality.score} out of 10, computed from customer ratings, seller performance, and return policies.`;
+            ? `इसकी क्वालिटी का स्कोर 10 में से ${product.quality.score} है, जो रेटिंग और ब्रांड नीतियों पर आधारित है।`
+            : `The verified quality score is ${product.quality.score} out of 10, computed from customer ratings, seller performance, and return policies.`;
 
       voiceStore.addDebugLog({
         transcript,
@@ -912,8 +992,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? 'ಅಂಗಡಿ ಇದನ್ನು ಪಟ್ಟಿ ಮಾಡಿಲ್ಲ.'
             : lang === 'hi'
-            ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
-            : "The store doesn't list that.";
+              ? 'स्टोर में यह जानकारी उपलब्ध नहीं है।'
+              : "The store doesn't list that.";
         return { spokenResponse: missingReply, executionResult: 'Battery info missing', status: 'success' };
       }
 
@@ -921,8 +1001,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `ಬ್ಯಾಟರಿ ವಿವರಗಳು: ${batteryInfo}.`
           : lang === 'hi'
-          ? `बैटरी विवरण: ${batteryInfo}।`
-          : `The battery life and playtime is: ${batteryInfo}.`;
+            ? `बैटरी विवरण: ${batteryInfo}।`
+            : `The battery life and playtime is: ${batteryInfo}.`;
 
       voiceStore.addDebugLog({
         transcript,
@@ -950,8 +1030,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? 'ಹೋಲಿಸಲು ಯಾವುದೇ ಉತ್ಪನ್ನಗಳು ಲಭ್ಯವಿಲ್ಲ.'
             : lang === 'hi'
-            ? 'तुलना के लिए कोई उत्पाद उपलब्ध नहीं है।'
-            : 'No product comparisons available right now.';
+              ? 'तुलना के लिए कोई उत्पाद उपलब्ध नहीं है।'
+              : 'No product comparisons available right now.';
         return { spokenResponse: missingReply, executionResult: 'No comparison data', status: 'clarification' };
       }
 
@@ -978,16 +1058,16 @@ export class ActionDispatcher {
             lang === 'kn'
               ? `ಈ ಉತ್ಪನ್ನ ${storeName} ನಲ್ಲಿ ಪಟ್ಟಿಯಾಗಿಲ್ಲ. ಅತ್ಯಂತ ಕಡಿಮೆ ಬೆಲೆ ${lowestStore} ನಲ್ಲಿ ${lowestPrice}.`
               : lang === 'hi'
-              ? `यह उत्पाद ${storeName} पर उपलब्ध नहीं है। सबसे कम कीमत ${lowestStore} पर ${lowestPrice} है।`
-              : `This item is not listed on ${storeName}. The lowest price is on ${lowestStore} at ${lowestPrice}.`;
+                ? `यह उत्पाद ${storeName} पर उपलब्ध नहीं है। सबसे कम कीमत ${lowestStore} पर ${lowestPrice} है।`
+                : `This item is not listed on ${storeName}. The lowest price is on ${lowestStore} at ${lowestPrice}.`;
         }
       } else {
         reply =
           lang === 'kn'
             ? `ಅತ್ಯಂತ ಕಡಿಮೆ ಬೆಲೆ ${lowestStore} ನಲ್ಲಿ ${lowestPrice} ಆಗಿದೆ.`
             : lang === 'hi'
-            ? `सबसे कम कीमत ${lowestStore} पर ${lowestPrice} है।`
-            : `The lowest price across stores is on ${lowestStore} at ${lowestPrice}.`;
+              ? `सबसे कम कीमत ${lowestStore} पर ${lowestPrice} है।`
+              : `The lowest price across stores is on ${lowestStore} at ${lowestPrice}.`;
       }
 
       voiceStore.addDebugLog({
@@ -1018,8 +1098,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? `ಆಯ್ಕೆ ${targetIndex + 1}: ${nextProduct.title.slice(0, 30)}, ${storeName} ನಲ್ಲಿ ₹${nextProduct.price}. ರೇಟಿಂಗ್ ${nextProduct.rating} ಸ್ಟಾರ್ಸ್.`
             : lang === 'hi'
-            ? `विकल्प ${targetIndex + 1}: ${nextProduct.title.slice(0, 30)}, ${storeName} पर ₹${nextProduct.price}। रेटिंग ${nextProduct.rating} स्टार।`
-            : `Option ${targetIndex + 1}: ${nextProduct.title.slice(0, 30)} on ${storeName} for ₹${nextProduct.price.toLocaleString('en-IN')} with ${nextProduct.rating} stars.`;
+              ? `विकल्प ${targetIndex + 1}: ${nextProduct.title.slice(0, 30)}, ${storeName} पर ₹${nextProduct.price}। रेटिंग ${nextProduct.rating} स्टार।`
+              : `Option ${targetIndex + 1}: ${nextProduct.title.slice(0, 30)} on ${storeName} for ₹${nextProduct.price.toLocaleString('en-IN')} with ${nextProduct.rating} stars.`;
 
         voiceStore.addDebugLog({
           transcript,
@@ -1040,8 +1120,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? 'ಬೇರೆ ಯಾವುದೇ ಆಯ್ಕೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ.'
           : lang === 'hi'
-          ? 'कोई अन्य विकल्प नहीं मिला।'
-          : 'No other options found.';
+            ? 'कोई अन्य विकल्प नहीं मिला।'
+            : 'No other options found.';
       return { spokenResponse: reply, executionResult: 'No next option', status: 'clarification' };
     }
 
@@ -1052,8 +1132,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? `ದೃಢೀಕರಿಸಿ: ಆರ್ಡರ್ #${lastOrder?.orderId || ''} ಅನ್ನು ರದ್ದುಗೊಳಿಸಬೇಕೆ? ಹೌದು ಎಂದು ಹೇಳಿ.`
           : lang === 'hi'
-          ? `पुष्टि करें: क्या आप ऑर्डर #${lastOrder?.orderId || ''} रद्द करना चाहते हैं? हाँ कहें।`
-          : `Confirm: Cancel order #${lastOrder?.orderId || ''}? Say yes to proceed.`;
+            ? `पुष्टि करें: क्या आप ऑर्डर #${lastOrder?.orderId || ''} रद्द करना चाहते हैं? हाँ कहें।`
+            : `Confirm: Cancel order #${lastOrder?.orderId || ''}? Say yes to proceed.`;
 
       voiceStore.setPendingConfirmation({
         action: 'cancel_order',
@@ -1077,8 +1157,8 @@ export class ActionDispatcher {
           lang === 'kn'
             ? 'ನಿಮ್ಮ ಹಿಂದಿನ ಆರ್ಡರ್‌ನ ವಸ್ತುಗಳನ್ನು ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ.'
             : lang === 'hi'
-            ? 'आपके पिछले ऑर्डर के आइटम फिर से कार्ट में जोड़ दिए गए हैं।'
-            : 'Added items from your previous order back to your cart.';
+              ? 'आपके पिछले ऑर्डर के आइटम फिर से कार्ट में जोड़ दिए गए हैं।'
+              : 'Added items from your previous order back to your cart.';
         return { spokenResponse: reply, executionResult: 'Reordered previous items', status: 'success' };
       }
       const reply = lang === 'kn' ? 'ಯಾವುದೇ ಹಿಂದಿನ ಆರ್ಡರ್ ಕಂಡುಬಂದಿಲ್ಲ.' : lang === 'hi' ? 'कोई पिछला ऑर्डर नहीं मिला।' : 'No previous order found to reorder.';
@@ -1093,8 +1173,8 @@ export class ActionDispatcher {
         targetLang === 'kn'
           ? 'ಭಾಷೆಯನ್ನು ಕನ್ನಡಕ್ಕೆ ಬದಲಾಯಿಸಲಾಗಿದೆ.'
           : targetLang === 'hi'
-          ? 'भाषा बदलकर हिन्दी कर दी गई है।'
-          : 'Language changed to English.';
+            ? 'भाषा बदलकर हिन्दी कर दी गई है।'
+            : 'Language changed to English.';
 
       voiceStore.addDebugLog({
         transcript,
@@ -1123,8 +1203,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಮತ್ತು ಖಾತೆಯ ವಿವರಗಳು ಇಲ್ಲಿವೆ.'
           : lang === 'hi'
-          ? 'यह रहा आपके खाते और प्रोफाइल का विवरण।'
-          : 'Here are your profile and account details.';
+            ? 'यह रहा आपके खाते और प्रोफाइल का विवरण।'
+            : 'Here are your profile and account details.';
 
       voiceStore.addDebugLog({
         transcript,
@@ -1147,8 +1227,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? 'ಖಾತೆಯಿಂದ ಯಶಸ್ವಿಯಾಗಿ ಲಾಗ್ ಔಟ್ ಮಾಡಲಾಗಿದೆ.'
           : lang === 'hi'
-          ? 'खाते से सफलतापूर्वक लॉग आउट कर दिया गया है।'
-          : 'You have been signed out successfully.';
+            ? 'खाते से सफलतापूर्वक लॉग आउट कर दिया गया है।'
+            : 'You have been signed out successfully.';
 
       voiceStore.addDebugLog({
         transcript,
@@ -1172,8 +1252,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? 'ಲಾಗಿನ್ ಪುಟಕ್ಕೆ ತೆರಳಲಾಗಿದೆ.'
           : lang === 'hi'
-          ? 'लॉगिन पृष्ठ खोल दिया गया है।'
-          : 'Opening login page.';
+            ? 'लॉगिन पृष्ठ खोल दिया गया है।'
+            : 'Opening login page.';
 
       voiceStore.addDebugLog({
         transcript,
@@ -1197,8 +1277,8 @@ export class ActionDispatcher {
         lang === 'kn'
           ? 'ಸೈನ್ ಅಪ್ ಪುಟಕ್ಕೆ ತೆರಳಲಾಗಿದೆ.'
           : lang === 'hi'
-          ? 'साइन अप पृष्ठ खोल दिया गया है।'
-          : 'Opening signup page.';
+            ? 'साइन अप पृष्ठ खोल दिया गया है।'
+            : 'Opening signup page.';
 
       voiceStore.addDebugLog({
         transcript,
@@ -1275,6 +1355,44 @@ export class ActionDispatcher {
         status: 'success'
       });
       return { spokenResponse: reply, executionResult: 'Provided help', status: 'success' };
+    }
+
+    // Greeting Action (Hi, GM, GA, GE, GN, Hey Google, Hey Siri, Greetings)
+    if (command.action === 'greeting') {
+      const targetLang: 'en' | 'hi' | 'kn' = lang === 'kn' || lang === 'hi' ? lang : 'en';
+      const greetingData = detectAndGenerateGreeting(transcript, targetLang);
+      const reply = greetingData?.spokenResponse || command.reply;
+      const assistantRes: AssistantResponse = {
+        spokenResponse: reply,
+        displayText: greetingData?.displayText || reply,
+        suggestedCommands: greetingData?.suggestedCommands || [
+          'Search boAt earbuds under 2000',
+          'Compare iPhone 15 prices',
+          'Show top deals today',
+          'Where is my order?'
+        ],
+        mood: 'helpful',
+        provider: 'rule_fallback'
+      };
+
+      voiceStore.addDebugLog({
+        transcript,
+        layer: command.layer,
+        action: 'greeting',
+        params: command.params,
+        confidence: command.confidence,
+        language: lang,
+        reply,
+        executionResult: 'Provided personalized assistant greeting and suggestions',
+        status: 'success'
+      });
+
+      return {
+        spokenResponse: reply,
+        executionResult: 'Friendly assistant greeting provided',
+        status: 'success',
+        assistantResponse: assistantRes
+      };
     }
 
     // Default Chat

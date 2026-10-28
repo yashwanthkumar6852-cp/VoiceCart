@@ -38,6 +38,7 @@ import { DashboardPromoBanner } from './components/dashboard/DashboardPromoBanne
 import { DashboardPopularBrands } from './components/dashboard/DashboardPopularBrands';
 import { DashboardExploreSection } from './components/dashboard/DashboardExploreSection';
 import { DashboardRightSidebar } from './components/dashboard/DashboardRightSidebar';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { useAuth } from './context/AuthContext';
 import { PendingAuthAction } from './types/auth';
 import { voiceStore } from './voice/voiceStore';
@@ -1011,6 +1012,11 @@ export const App: React.FC = () => {
             onToggleCompare={handleToggleCompare}
             language={language}
             showToast={showToast}
+            cart={cart}
+            onRemoveFromCart={handleRemoveFromCart}
+            onSearchPrompt={(q) => {
+              navigate(`/?q=${encodeURIComponent(q)}`);
+            }}
           />
         </div>
       </div>
@@ -1538,7 +1544,7 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      <div className="page-body-container">
+      <div className={`page-body-container ${activeTab === 'cart' ? 'cart-page-wrapper' : ''}`}>
 
       {activeTab === 'cart' && (
         <CartScreen
@@ -1609,6 +1615,29 @@ export const App: React.FC = () => {
           pendingNotice={authPendingNotice}
         />
       )}
+
+      {/* Smartphone Bottom Navigation Bar */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          if ((tab === 'cart' || tab === 'orders') && !isAuthenticated) {
+            handleProtectedAction(
+              { type: tab === 'cart' ? 'OPEN_CART' : 'OPEN_ORDERS' },
+              tab === 'cart' ? 'Please log in to view your cart.' : 'Please log in to view your orders.'
+            );
+            return;
+          }
+          setActiveTab(tab);
+        }}
+        onNavigateRoute={navigate}
+        cartCount={cart.length}
+        onStartVoice={() => {
+          const micBtn = (document.getElementById('right-sidebar-voice-mic-btn') ||
+            document.getElementById('navbar-voice-mic-btn')) as HTMLButtonElement | null;
+          if (micBtn) micBtn.click();
+        }}
+        language={language}
+      />
     </div>
   );
 };

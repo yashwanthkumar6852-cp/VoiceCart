@@ -395,6 +395,7 @@ export const CategoryQuickStrip: React.FC<Props> = ({
 
   return (
     <div
+      className="category-quick-strip-container"
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(10, minmax(0, 1fr))',

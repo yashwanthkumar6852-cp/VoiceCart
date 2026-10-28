@@ -167,8 +167,8 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
 
   if (loading) {
     return (
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '40px 16px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 450px) 1fr', gap: '32px' }}>
+      <div style={{ width: '100%', maxWidth: '100%', margin: '0 auto', padding: '40px 16px', boxSizing: 'border-box' }}>
+        <div className="product-details-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 450px) 1fr', gap: '32px' }}>
           <div className="skeleton-box" style={{ height: '480px', borderRadius: '12px' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="skeleton-box" style={{ height: '24px', width: '40%' }} />
@@ -224,9 +224,11 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
   return (
     <div
       style={{
-        maxWidth: '1360px',
+        width: '100%',
+        maxWidth: '100%',
         margin: '0 auto',
         padding: '24px 16px 80px 16px',
+        boxSizing: 'border-box',
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
       }}
     >
@@ -277,6 +279,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
 
       {/* TWO-COLUMN FLIPKART STYLE LAYOUT */}
       <div
+        className="product-details-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'minmax(340px, 460px) 1fr',

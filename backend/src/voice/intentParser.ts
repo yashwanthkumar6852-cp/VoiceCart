@@ -2,6 +2,7 @@ import axios from 'axios';
 import { RankingPreference, VoiceIntentResult } from '../types/product';
 import { config } from '../config';
 import { querySpecExtractor } from '../ranking/querySpecExtractor';
+import { detectAndGenerateGreeting } from './greetings';
 
 export class IntentParser {
   /**
@@ -19,6 +20,16 @@ export class IntentParser {
     }
 
     const language = this.detectLanguage(cleanText);
+
+    // 0. Instant Siri / Google Assistant style greeting check
+    const greetingMatch = detectAndGenerateGreeting(cleanText, language);
+    if (greetingMatch) {
+      return {
+        intent: 'GREETING',
+        language,
+        spokenResponse: greetingMatch.spokenResponse
+      };
+    }
 
     // Try LLM parsing if OpenAI/Gemini API keys are configured
     if (config.geminiApiKey || config.openaiApiKey) {
@@ -54,7 +65,7 @@ The input can be in English, Hindi, or Kannada (including code-switching like "à
 Always extract the clean normalized product query in English keywords for e-commerce search.
 
 Output JSON only with keys:
-- intent: ("SEARCH" | "COMPARE" | "ADD_TO_CART" | "REMOVE_FROM_CART" | "VIEW_CART" | "BUY_NOW" | "TRACK_ORDER" | "READ_DETAILS" | "CLARIFY_BUDGET")
+- intent: ("SEARCH" | "COMPARE" | "ADD_TO_CART" | "REMOVE_FROM_CART" | "VIEW_CART" | "BUY_NOW" | "TRACK_ORDER" | "READ_DETAILS" | "CLARIFY_BUDGET" | "GREETING")
 - language: ("en" | "hi" | "kn")
 - productQuery: string (clean English product name e.g. "boAt earbuds", "running shoes")
 - maxBudget: number in INR (or null)
@@ -111,6 +122,16 @@ User Query: "${text}"`;
 
   private parseWithRules(text: string, language: 'en' | 'hi' | 'kn', context?: any): VoiceIntentResult {
     const lower = text.toLowerCase();
+
+    // 0. Greeting & Wake Words
+    const greeting = detectAndGenerateGreeting(text, language);
+    if (greeting) {
+      return {
+        intent: 'GREETING',
+        language,
+        spokenResponse: greeting.spokenResponse
+      };
+    }
 
     // 1. Order Tracking
     if (

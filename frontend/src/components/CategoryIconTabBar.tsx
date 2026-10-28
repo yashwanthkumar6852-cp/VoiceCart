@@ -167,7 +167,7 @@ export const CategoryIconTabBar: React.FC<Props> = ({
         transition: 'background 0.2s ease, border-color 0.2s ease'
       }}
     >
-      <div style={{ position: 'relative', maxWidth: '1440px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: '100%', margin: '0 auto' }}>
         {/* Left Scroll Arrow (Desktop) */}
         {canScrollLeft && (
           <button

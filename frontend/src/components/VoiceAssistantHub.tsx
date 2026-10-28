@@ -263,17 +263,17 @@ export const VoiceAssistantHub: React.FC<Props> = ({
                   background: isListening
                     ? '#fee2e2'
                     : isProcessing
-                    ? '#fef3c7'
-                    : isSpeaking
-                    ? '#dcfce7'
-                    : '#e0f2fe',
+                      ? '#fef3c7'
+                      : isSpeaking
+                        ? '#dcfce7'
+                        : '#e0f2fe',
                   color: isListening
                     ? '#dc2626'
                     : isProcessing
-                    ? '#d97706'
-                    : isSpeaking
-                    ? '#16a34a'
-                    : '#0284c7',
+                      ? '#d97706'
+                      : isSpeaking
+                        ? '#16a34a'
+                        : '#0284c7',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px'
@@ -287,20 +287,20 @@ export const VoiceAssistantHub: React.FC<Props> = ({
                     background: isListening
                       ? '#dc2626'
                       : isProcessing
-                      ? '#d97706'
-                      : isSpeaking
-                      ? '#16a34a'
-                      : '#0284c7',
+                        ? '#d97706'
+                        : isSpeaking
+                          ? '#16a34a'
+                          : '#0284c7',
                     animation: isListening || isSpeaking ? 'pulse-ring 1.5s infinite' : 'none'
                   }}
                 />
                 {isListening
                   ? 'Listening...'
                   : isProcessing
-                  ? 'Searching stores...'
-                  : isSpeaking
-                  ? 'Speaking response...'
-                  : 'Ready'}
+                    ? 'Searching stores...'
+                    : isSpeaking
+                      ? 'Speaking response...'
+                      : 'Ready'}
               </span>
             </div>
             <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
@@ -383,16 +383,16 @@ export const VoiceAssistantHub: React.FC<Props> = ({
               background: isListening
                 ? 'linear-gradient(135deg, #ef4444, #dc2626)'
                 : isProcessing
-                ? 'linear-gradient(135deg, #f59e0b, #d97706)'
-                : isSpeaking
-                ? 'linear-gradient(135deg, #10b981, #059669)'
-                : 'linear-gradient(135deg, #2874f0, #1c62d6)',
+                  ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                  : isSpeaking
+                    ? 'linear-gradient(135deg, #10b981, #059669)'
+                    : 'linear-gradient(135deg, #2874f0, #1c62d6)',
               border: isListening ? '3px solid #fecaca' : isSpeaking ? '3px solid #bbf7d0' : '3px solid #ffffff',
               boxShadow: isListening
                 ? '0 0 24px rgba(239, 68, 68, 0.6)'
                 : isSpeaking
-                ? '0 0 20px rgba(16, 185, 129, 0.5)'
-                : '0 4px 16px rgba(40, 116, 240, 0.35)',
+                  ? '0 0 20px rgba(16, 185, 129, 0.5)'
+                  : '0 4px 16px rgba(40, 116, 240, 0.35)',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
@@ -405,8 +405,8 @@ export const VoiceAssistantHub: React.FC<Props> = ({
               isListening
                 ? 'Listening... Click to stop'
                 : isSpeaking
-                ? 'Speaking... Click to interrupt (Barge-in)'
-                : `Tap to Speak (${langCode})`
+                  ? 'Speaking... Click to interrupt (Barge-in)'
+                  : `Tap to Speak (${langCode})`
             }
           >
             {isListening ? (

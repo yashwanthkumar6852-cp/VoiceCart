@@ -136,6 +136,7 @@ export const DashboardPopularBrands: React.FC<Props> = ({
 
       {/* 8 Brand Cards Grid */}
       <div
+        className="popular-brands-strip-container"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',

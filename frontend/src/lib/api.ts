@@ -62,7 +62,7 @@ function notifyServerStatus(status: ServerWakeStatus) {
   serverStatusListeners.forEach((fn) => {
     try {
       fn(status);
-    } catch {}
+    } catch { }
   });
 }
 
@@ -136,7 +136,7 @@ export function isApiDebugEnabled(): boolean {
     if ((window as any).__VOICECART_DEBUG_API__ === true) return true;
     try {
       if (localStorage.getItem('voicecart_debug_api') === 'true') return true;
-    } catch {}
+    } catch { }
   }
   return false;
 }
@@ -146,7 +146,7 @@ export function setApiDebugEnabled(enabled: boolean): void {
     (window as any).__VOICECART_DEBUG_API__ = enabled;
     try {
       localStorage.setItem('voicecart_debug_api', enabled ? 'true' : 'false');
-    } catch {}
+    } catch { }
   }
 }
 
@@ -635,6 +635,15 @@ export const api = {
   }): Promise<any> => {
     const res = await httpClient.post(API_ROUTES.VOICE_COMMAND, payload);
     return res.data.result;
+  },
+
+  getAssistantResponse: async (payload: any): Promise<any> => {
+    try {
+      const res = await httpClient.post(API_ROUTES.VOICE_ASSISTANT_RESPOND, payload);
+      return res.data;
+    } catch {
+      return null;
+    }
   },
 
   // Cart

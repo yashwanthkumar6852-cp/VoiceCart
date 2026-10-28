@@ -238,6 +238,7 @@ export const DashboardExploreSection: React.FC<Props> = ({
 
       {/* 4. Products Grid */}
       <div
+        className="explore-mobiles-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',

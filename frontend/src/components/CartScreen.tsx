@@ -384,14 +384,14 @@ export const CartScreen: React.FC<Props> = ({
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.75fr) minmax(0, 1.35fr)', gap: '24px' }}>
+    <div className="cart-screen-grid">
       {/* LEFT COLUMN: Basket Items with Checkboxes */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="cart-items-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         {/* Cart Header Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
-              <ShoppingBag size={22} color="var(--primary)" />
+        <div className="cart-header-actions-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', minWidth: 0 }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', margin: 0 }}>
+              <ShoppingBag size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
               <span>{t.shoppingBasket} ({cart.length})</span>
             </h3>
 
@@ -409,7 +409,8 @@ export const CartScreen: React.FC<Props> = ({
                 borderRadius: '6px',
                 fontSize: '0.75rem',
                 cursor: 'pointer',
-                fontWeight: 600
+                fontWeight: 600,
+                flexShrink: 0
               }}
             >
               {selectedItemIds.size === cart.length ? (
@@ -421,7 +422,7 @@ export const CartScreen: React.FC<Props> = ({
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
             <button
               onClick={handleVerifyPrices}
               disabled={isVerifying}
@@ -434,13 +435,14 @@ export const CartScreen: React.FC<Props> = ({
                 color: 'var(--primary)',
                 padding: '6px 12px',
                 borderRadius: '8px',
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 fontWeight: 600,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                flexShrink: 0
               }}
             >
-              <RefreshCw size={13} className={isVerifying ? 'mic-active-pulse' : ''} />
-              {isVerifying ? (language === 'kn' ? 'ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...' : language === 'hi' ? 'सत्यापित हो रहा है...' : 'Verifying...') : (language === 'kn' ? 'ದರಗಳನ್ನು ಮರು-ಪರಿಶೀಲಿಸಿ' : language === 'hi' ? 'कीमतों की दोबारा जांच' : 'Re-check Live Prices')}
+              <RefreshCw size={13} className={isVerifying ? 'mic-active-pulse' : ''} style={{ flexShrink: 0 }} />
+              <span>{isVerifying ? (language === 'kn' ? 'ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...' : language === 'hi' ? 'सत्यापित हो रहा है...' : 'Verifying...') : (language === 'kn' ? 'ದರಗಳನ್ನು ಮರು-ಪರಿಶೀಲಿಸಿ' : language === 'hi' ? 'कीमतों की दोबारा जांच' : 'Re-check Live Prices')}</span>
             </button>
             <button
               onClick={onClearCart}
@@ -450,8 +452,9 @@ export const CartScreen: React.FC<Props> = ({
                 color: 'var(--text-muted)',
                 padding: '6px 10px',
                 borderRadius: '8px',
-                fontSize: '0.8rem',
-                cursor: 'pointer'
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                flexShrink: 0
               }}
             >
               {t.clearCart}
@@ -470,120 +473,123 @@ export const CartScreen: React.FC<Props> = ({
               fontSize: '0.85rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              width: '100%',
+              boxSizing: 'border-box'
             }}
           >
-            <CheckCircle2 size={16} />
+            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
             <span>{verificationResult}</span>
           </div>
         )}
 
         {/* ALL BASKET ITEMS LIST */}
-        <div className="glass-panel" style={{ padding: '18px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="glass-panel cart-items-container-panel">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
             {cart.map((item) => {
               const isSelected = selectedItemIds.has(item.id);
               const storeName = item.product.store || 'amazon';
               return (
                 <div
                   key={item.id}
+                  className="cart-item-row"
                   style={{
                     background: isSelected ? 'rgba(99, 102, 241, 0.04)' : 'var(--bg-subtle)',
                     borderRadius: '12px',
-                    padding: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
                     border: isSelected ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    boxSizing: 'border-box',
+                    width: '100%',
+                    maxWidth: '100%'
                   }}
                 >
-                  {/* Selection Checkbox */}
-                  <div
-                    onClick={() => toggleItemSelection(item.id)}
-                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    title={isSelected ? 'Deselect item' : 'Select item for checkout'}
-                  >
-                    {isSelected ? (
-                      <CheckSquare size={20} color="var(--primary)" />
-                    ) : (
-                      <Square size={20} color="var(--text-muted)" />
-                    )}
-                  </div>
-
-                  <div style={{ width: '68px', height: '68px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-subtle, #ffffff)' }}>
-                    <ProductImage
-                      src={item.product.imageUrl}
-                      images={item.product.images}
-                      thumbnail={(item.product as any).thumbnail}
-                      serpapi_thumbnail={(item.product as any).serpapi_thumbnail}
-                      alt={item.product.title}
-                      store={item.product.store}
-                      productId={item.product.productId}
-                      variantText={item.product.variantText}
-                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
-                      <span
-                        style={{
-                          fontSize: '0.68rem',
-                          fontWeight: 700,
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          background:
-                            storeName === 'amazon'
-                              ? '#ff9900'
-                              : storeName === 'flipkart'
-                              ? '#2874f0'
-                              : storeName === 'meesho'
-                              ? '#f43397'
-                              : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                          color: storeName === 'amazon' ? '#000' : '#fff'
-                        }}
-                      >
-                        {storeName.toUpperCase()}
-                      </span>
-
-                      {item.priceChanged && (
-                        <span style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', fontWeight: 600 }}>
-                          ⚡ Price Refreshed
-                        </span>
+                  {/* Top / Left Main Info Group: Checkbox + Thumbnail + Details */}
+                  <div className="cart-item-info-group">
+                    {/* Selection Checkbox */}
+                    <div
+                      onClick={() => toggleItemSelection(item.id)}
+                      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                      title={isSelected ? 'Deselect item' : 'Select item for checkout'}
+                    >
+                      {isSelected ? (
+                        <CheckSquare size={20} color="var(--primary)" />
+                      ) : (
+                        <Square size={20} color="var(--text-muted)" />
                       )}
                     </div>
 
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.product.title}
-                    </h4>
+                    <div style={{ width: '56px', height: '56px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-subtle, #ffffff)' }}>
+                      <ProductImage
+                        src={item.product.imageUrl}
+                        images={item.product.images}
+                        thumbnail={(item.product as any).thumbnail}
+                        serpapi_thumbnail={(item.product as any).serpapi_thumbnail}
+                        alt={item.product.title}
+                        store={item.product.store}
+                        productId={item.product.productId}
+                        variantText={item.product.variantText}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    </div>
 
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                      <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                        ₹{item.currentPrice.toLocaleString()}
-                      </span>
-                      {item.product.mrp > item.currentPrice && (
-                        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', textDecoration: 'line-through' }}>
-                          ₹{item.product.mrp.toLocaleString()}
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '2px', flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background:
+                              storeName === 'amazon'
+                                ? '#ff9900'
+                                : storeName === 'flipkart'
+                                ? '#2874f0'
+                                : storeName === 'meesho'
+                                ? '#f43397'
+                                : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                            color: storeName === 'amazon' ? '#000' : '#fff'
+                          }}
+                        >
+                          {storeName.toUpperCase()}
                         </span>
-                      )}
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                        Qty: {item.quantity}
-                      </span>
+
+                        {item.priceChanged && (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', fontWeight: 600 }}>
+                            ⚡ Price Refreshed
+                          </span>
+                        )}
+                      </div>
+
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.product.title}
+                      </h4>
+
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                          ₹{item.currentPrice.toLocaleString()}
+                        </span>
+                        {item.product.mrp > item.currentPrice && (
+                          <span style={{ fontSize: '0.76rem', color: 'var(--text-dim)', textDecoration: 'line-through' }}>
+                            ₹{item.product.mrp.toLocaleString()}
+                          </span>
+                        )}
+                        <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                          Qty: {item.quantity}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Actions Column */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                  {/* Actions Column (On mobile, renders as a bottom action bar with full width) */}
+                  <div className="cart-item-actions-group">
                     {/* Official store deep link */}
                     <a
                       href={item.product.affiliateUrl || item.product.productUrl || '#'}
                       target="_blank"
                       rel="noopener noreferrer"
+                      className="cart-store-checkout-link"
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
                         background:
                           storeName === 'amazon'
                             ? '#ff9900'
@@ -592,32 +598,19 @@ export const CartScreen: React.FC<Props> = ({
                             : storeName === 'meesho'
                             ? '#f43397'
                             : 'var(--primary)',
-                        color: storeName === 'amazon' ? '#000' : '#fff',
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        fontSize: '0.74rem',
-                        fontWeight: 700,
-                        textDecoration: 'none'
+                        color: storeName === 'amazon' ? '#000' : '#fff'
                       }}
                     >
                       <span>Checkout on {storeName.toUpperCase()}</span>
-                      <ExternalLink size={12} />
+                      <ExternalLink size={12} style={{ flexShrink: 0 }} />
                     </a>
 
                     <button
                       onClick={() => onRemoveItem(item.id)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--accent-rose)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '0.75rem'
-                      }}
+                      className="cart-item-remove-btn"
                     >
-                      <Trash2 size={13} /> {t.remove}
+                      <Trash2 size={13} style={{ flexShrink: 0 }} />
+                      <span>{t.remove}</span>
                     </button>
                   </div>
                 </div>
@@ -628,23 +621,28 @@ export const CartScreen: React.FC<Props> = ({
       </div>
 
       {/* RIGHT COLUMN: Order Summary & Universal Demo Payment */}
-      <div>
-        <div className="glass-panel" style={{ padding: '22px', position: 'sticky', top: '20px' }}>
+      <div className="cart-summary-column" style={{ minWidth: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+        <div className="glass-panel cart-order-summary-panel">
           {/* SECURE CHECKOUT HEADER BANNER */}
           <div
+            className="cart-secure-badge-row"
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '6px',
               background: 'rgba(99, 102, 241, 0.12)',
               border: '1px solid rgba(99, 102, 241, 0.3)',
               padding: '8px 12px',
               borderRadius: '8px',
-              marginBottom: '16px'
+              marginBottom: '16px',
+              width: '100%',
+              boxSizing: 'border-box'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ShieldCheck size={15} color="var(--primary)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+              <ShieldCheck size={15} color="var(--primary)" style={{ flexShrink: 0 }} />
               <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.04em' }}>
                 SECURE INSTANT GATEWAY
               </span>
@@ -667,63 +665,69 @@ export const CartScreen: React.FC<Props> = ({
               fontSize: '0.88rem',
               borderBottom: '1px solid var(--border-color)',
               paddingBottom: '14px',
-              marginBottom: '14px'
+              marginBottom: '14px',
+              width: '100%',
+              boxSizing: 'border-box'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-              <span>Total Items in Cart:</span>
-              <span>{cart.length} items</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', width: '100%', boxSizing: 'border-box' }}>
+              <span style={{ minWidth: 0, flex: 1 }}>Total Items in Cart:</span>
+              <span style={{ flexShrink: 0, fontWeight: 600 }}>{cart.length} items</span>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-main)', fontWeight: 600 }}>
-              <span>Selected for Payment ({selectedCartItems.length} items):</span>
-              <span style={{ color: 'var(--primary)' }}>₹{selectedTotal.toLocaleString()}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontWeight: 600, width: '100%', boxSizing: 'border-box' }}>
+              <span style={{ minWidth: 0, flex: 1 }}>Selected for Payment ({selectedCartItems.length} items):</span>
+              <span style={{ color: 'var(--primary)', flexShrink: 0, whiteSpace: 'nowrap' }}>₹{selectedTotal.toLocaleString()}</span>
             </div>
 
             {totalDiscountSavings > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-green)', fontWeight: 600 }}>
-                <span>Estimated Savings:</span>
-                <span>-₹{totalDiscountSavings.toLocaleString()}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', color: 'var(--accent-green)', fontWeight: 600, width: '100%', boxSizing: 'border-box' }}>
+                <span style={{ minWidth: 0, flex: 1 }}>Estimated Savings:</span>
+                <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>-₹{totalDiscountSavings.toLocaleString()}</span>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-              <span>Delivery Charges:</span>
-              <span style={{ color: 'var(--accent-green)', fontWeight: 700 }}>FREE</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', width: '100%', boxSizing: 'border-box' }}>
+              <span style={{ minWidth: 0, flex: 1 }}>Delivery Charges:</span>
+              <span style={{ color: 'var(--accent-green)', fontWeight: 700, flexShrink: 0 }}>FREE</span>
             </div>
           </div>
 
           {/* Total Payable */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 800, marginBottom: '18px', color: 'var(--text-main)' }}>
-            <span>{t.totalPayable}</span>
-            <span style={{ color: 'var(--primary)' }}>₹{selectedTotal.toLocaleString()}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 800, marginBottom: '18px', color: 'var(--text-main)', width: '100%', boxSizing: 'border-box' }}>
+            <span style={{ minWidth: 0, flex: 1 }}>{t.totalPayable}</span>
+            <span style={{ color: 'var(--primary)', flexShrink: 0, whiteSpace: 'nowrap' }}>₹{selectedTotal.toLocaleString()}</span>
           </div>
 
           {/* UNIVERSAL PAYMENT ACTION BUTTON */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
             <button
               onClick={() => setShowPaymentModal(true)}
               disabled={selectedCartItems.length === 0}
+              className="cart-checkout-proceed-btn"
               style={{
                 width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '10px',
-                padding: '14px 18px',
+                gap: '8px',
+                padding: '13px 14px',
                 borderRadius: '12px',
                 background: selectedCartItems.length === 0 ? 'var(--border-color)' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                 border: 'none',
                 color: '#fff',
                 fontWeight: 700,
-                fontSize: '0.96rem',
+                fontSize: '0.94rem',
                 cursor: selectedCartItems.length === 0 ? 'not-allowed' : 'pointer',
                 boxShadow: selectedCartItems.length === 0 ? 'none' : '0 8px 25px rgba(99, 102, 241, 0.4)',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                minWidth: 0
               }}
             >
-              <Lock size={18} />
-              <span>
+              <Lock size={18} style={{ flexShrink: 0 }} />
+              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {selectedCartItems.length === 0
                   ? (language === 'kn' ? 'ಪಾವತಿಸಲು ಐಟಂ ಆಯ್ಕೆಮಾಡಿ' : language === 'hi' ? 'भुगतान के लिए आइटम चुनें' : 'Select Items to Pay')
                   : `${t.checkout} • ₹${selectedTotal.toLocaleString()}`}
@@ -742,11 +746,13 @@ export const CartScreen: React.FC<Props> = ({
                 alignItems: 'flex-start',
                 fontSize: '0.74rem',
                 color: 'var(--text-secondary)',
-                lineHeight: 1.4
+                lineHeight: 1.4,
+                width: '100%',
+                boxSizing: 'border-box'
               }}
             >
               <Info size={15} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div>
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <strong>Notice:</strong> Complete fast instant checkout here, or proceed on official store using <em>Checkout on &lt;store&gt;</em>.
               </div>
             </div>

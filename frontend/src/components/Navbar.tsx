@@ -19,7 +19,8 @@ import {
   Sun,
   Scale,
   Heart,
-  Bell
+  Bell,
+  Volume2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -29,6 +30,7 @@ import { useVoice } from '../hooks/useVoice';
 import { commandRouter } from '../voice/commandRouter';
 import { actionDispatcher, DispatcherHandlers } from '../voice/dispatcher';
 import { voiceStore } from '../voice/voiceStore';
+import { AssistantResponse } from '../voice/types';
 import { ttsService } from '../voice/tts';
 import { CATEGORY_ITEMS } from './CategoryIconTabBar';
 
@@ -259,7 +261,9 @@ export const Navbar: React.FC<Props> = ({
           }
 
           const dispatchResult = await actionDispatcher.dispatch(commandResult, voiceHandlers, clean);
-          const spoken = dispatchResult.spokenResponse || commandResult.reply;
+          const assistantRes = dispatchResult.assistantResponse || commandResult.assistantResponse;
+
+          const spoken = assistantRes?.spokenResponse || dispatchResult.spokenResponse || commandResult.reply;
           if (spoken) {
             const spokenLang = (commandResult.language && commandResult.language !== 'auto'
               ? commandResult.language
@@ -315,7 +319,7 @@ export const Navbar: React.FC<Props> = ({
     setSavedLocation(newLoc);
     try {
       localStorage.setItem('voicecart_delivery_location', JSON.stringify(newLoc));
-    } catch {}
+    } catch { }
     setPincodeError(null);
     setIsLocationModalOpen(false);
   };
@@ -324,7 +328,7 @@ export const Navbar: React.FC<Props> = ({
     setSavedLocation(null);
     try {
       localStorage.removeItem('voicecart_delivery_location');
-    } catch {}
+    } catch { }
     setPincodeInput('');
     setIsLocationModalOpen(false);
   };
@@ -363,8 +367,9 @@ export const Navbar: React.FC<Props> = ({
         }}
       >
         <div
+          className="navbar-top-row"
           style={{
-            maxWidth: '1740px',
+            maxWidth: '100%',
             margin: '0 auto',
             padding: '11px 24px',
             display: 'flex',
@@ -575,8 +580,8 @@ export const Navbar: React.FC<Props> = ({
 
           {/* 3. Right Action Icons & Controls matching Reference */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
-            {/* Language Selector Capsule */}
-            <div ref={langMenuRef} style={{ position: 'relative' }}>
+            {/* Language Selector Capsule (Desktop only, mobile has pills in search row) */}
+            <div ref={langMenuRef} className="navbar-desktop-pill" style={{ position: 'relative' }}>
               <button
                 type="button"
                 onClick={() => setIsLangMenuOpen((prev) => !prev)}
@@ -657,6 +662,7 @@ export const Navbar: React.FC<Props> = ({
             {/* Theme Toggle Button (Sun & Moon) */}
             <button
               type="button"
+              className="navbar-desktop-pill"
               onClick={toggleTheme}
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
               style={{
@@ -922,6 +928,7 @@ export const Navbar: React.FC<Props> = ({
 
             {/* Cart Button */}
             <div
+              className="navbar-top-cart-btn"
               onClick={handleCartClick}
               style={{
                 position: 'relative',
@@ -1003,7 +1010,7 @@ export const Navbar: React.FC<Props> = ({
                 >
                   <User size={16} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: 1.15 }}>
+                <div className="navbar-profile-text" style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: 1.15 }}>
                   {!isAuthenticated ? (
                     <>
                       <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ffffff' }}>

@@ -330,6 +330,7 @@ export interface VoiceIntentResult {
     | 'TRACK_ORDER'
     | 'READ_DETAILS'
     | 'CLARIFY_BUDGET'
+    | 'GREETING'
     | 'UNKNOWN';
   language: 'en' | 'hi' | 'kn';
   productQuery?: string;

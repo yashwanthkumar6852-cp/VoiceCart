@@ -245,21 +245,27 @@ export const PaymentModal: React.FC<Props> = ({
   const merchantUpiId = paymentConfig?.upiId || '8660318787@ibl';
   const merchantName = paymentConfig?.upiPayeeName || 'VoiceCart';
 
-  // Demo UPI URI
+  // Dynamic UPI URI with pre-filled total amount and transaction references
   const demoUpiUri = useMemo(() => {
-    return `upi://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${effectiveAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(orderDisplayId)}`;
-  }, [merchantUpiId, merchantName, effectiveAmount, orderDisplayId]);
+    const safeAmount = Number(effectiveAmount) || Number(amount) || 0;
+    const formattedAmount = safeAmount.toFixed(2);
+    const sanitizedOrderId = String(orderDisplayId || 'VC-ORD').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 30);
+    const sanitizedNote = encodeURIComponent(`VoiceCart Order ${sanitizedOrderId}`.slice(0, 45));
+    // NPCI standard UPI format with pa, pn, am, cu, tn, tr to directly prefill amount on scan
+    return `upi://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${formattedAmount}&cu=INR&tn=${sanitizedNote}&tr=${encodeURIComponent(sanitizedOrderId)}`;
+  }, [merchantUpiId, merchantName, effectiveAmount, amount, orderDisplayId]);
 
-  // Generate live QR code for UPI
+  // Generate live high-resolution dynamic QR code for UPI with amount pre-filled
   useEffect(() => {
     if (isOpen && demoUpiUri) {
       QRCode.toDataURL(demoUpiUri, {
-        width: 220,
-        margin: 1,
+        width: 280,
+        margin: 2,
+        errorCorrectionLevel: 'M',
         color: { dark: '#0f172a', light: '#ffffff' }
       })
         .then((url) => setUpiQrUrl(url))
-        .catch((err) => console.error('QR code error:', err));
+        .catch((err) => console.error('QR code generation error:', err));
     }
   }, [isOpen, demoUpiUri]);
 
@@ -516,6 +522,7 @@ export const PaymentModal: React.FC<Props> = ({
 
   return (
     <div
+      className="payment-modal-backdrop"
       style={{
         position: 'fixed',
         inset: 0,
@@ -531,7 +538,7 @@ export const PaymentModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="glass-panel"
+        className="glass-panel payment-modal-card"
         style={{
           maxWidth: '880px',
           width: '100%',
@@ -550,6 +557,7 @@ export const PaymentModal: React.FC<Props> = ({
       >
         {/* TOP BANNER */}
         <div
+          className="payment-top-banner"
           style={{
             background: 'linear-gradient(90deg, #4f46e5, #06b6d4)',
             color: '#fff',
@@ -558,15 +566,35 @@ export const PaymentModal: React.FC<Props> = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             fontSize: '0.82rem',
-            fontWeight: 700
+            fontWeight: 700,
+            gap: '8px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={16} />
-            <span>VOICECART FAST SECURE CHECKOUT — 256-Bit Encrypted Payment</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
+            <Sparkles size={16} style={{ flexShrink: 0 }} />
+            <span
+              className="payment-modal-desktop-title"
+              style={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}
+            >
+              VOICECART FAST SECURE CHECKOUT — 256-Bit Encrypted Payment
+            </span>
+            <span
+              className="payment-modal-mobile-title"
+              style={{
+                display: 'none',
+                whiteSpace: 'nowrap',
+                fontWeight: 800
+              }}
+            >
+              Secure Checkout
+            </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             <button
               onClick={() => setShowDemoControls(!showDemoControls)}
               style={{
@@ -583,8 +611,8 @@ export const PaymentModal: React.FC<Props> = ({
                 gap: '4px'
               }}
             >
-              <Sliders size={13} />
-              <span>Simulation Controls</span>
+              <Sliders size={13} style={{ flexShrink: 0 }} />
+              <span className="payment-demo-btn-text">Simulation Controls</span>
             </button>
 
             <button
@@ -666,18 +694,23 @@ export const PaymentModal: React.FC<Props> = ({
         )}
 
         {/* MAIN BODY */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', flex: 1, overflowY: 'auto' }}>
+        <div className="payment-modal-split">
           {/* LEFT PAYMENT AREA */}
-          <div style={{ padding: '24px', borderRight: '1px solid var(--border-color)' }}>
+          <div className="payment-modal-left-area">
             {/* VIEW 1: CHECKOUT TABS */}
             {paymentView === 'checkout' && !isProcessing && (
               <>
-                <div style={{ marginBottom: '18px' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Lock size={20} color="var(--primary)" />
-                    <span>{isPayBeforeDelivery ? 'Pay Online Before Delivery' : 'Select Payment Option'}</span>
-                  </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
+                    <h3 style={{ fontSize: '1.18rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                      <Lock size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
+                      <span>{isPayBeforeDelivery ? 'Pay Online Before Delivery' : 'Select Payment Option'}</span>
+                    </h3>
+                    <div style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid var(--primary)', padding: '3px 10px', borderRadius: '20px', color: 'var(--primary)', fontWeight: 800, fontSize: '0.82rem', flexShrink: 0 }}>
+                      Due: ₹{effectiveAmount.toLocaleString()}
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.35 }}>
                     {isPayBeforeDelivery
                       ? 'Pay online now to convert your COD order into a pre-paid delivery. Zero cash due on arrival.'
                       : 'Choose any of the 5 payment methods below to complete your checkout.'}
@@ -685,13 +718,13 @@ export const PaymentModal: React.FC<Props> = ({
                 </div>
 
                 {/* 5 MAIN TABS */}
-                <div style={{ display: 'grid', gridTemplateColumns: isPayBeforeDelivery ? 'repeat(4, 1fr)' : 'repeat(5, 1fr)', gap: '6px', marginBottom: '20px' }}>
+                <div className="payment-main-tabs-grid">
                   {[
-                    ...(isPayBeforeDelivery ? [] : [{ id: 'cod', label: 'COD', icon: Truck }]),
-                    { id: 'upi', label: 'UPI', icon: Smartphone },
-                    { id: 'qr', label: 'QR Code', icon: QrCode },
-                    { id: 'wallet', label: 'Wallets', icon: Wallet },
-                    { id: 'card_netbanking', label: 'Cards & Banks', icon: CreditCard }
+                    ...(isPayBeforeDelivery ? [] : [{ id: 'cod', label: 'COD', mobileLabel: 'COD', icon: Truck }]),
+                    { id: 'upi', label: 'UPI', mobileLabel: 'UPI', icon: Smartphone },
+                    { id: 'qr', label: 'QR Code', mobileLabel: 'QR Code', icon: QrCode },
+                    { id: 'wallet', label: 'Wallets', mobileLabel: 'Wallets', icon: Wallet },
+                    { id: 'card_netbanking', label: 'Cards & Banks', mobileLabel: 'Cards', icon: CreditCard }
                   ].map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -700,23 +733,15 @@ export const PaymentModal: React.FC<Props> = ({
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as PaymentTab)}
                         style={{
-                          padding: '10px 4px',
-                          borderRadius: '10px',
                           border: isActive ? '2px solid var(--primary)' : '1px solid var(--border-color)',
                           background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-subtle)',
                           color: isActive ? 'var(--primary)' : 'var(--text-main)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '0.74rem',
-                          fontWeight: isActive ? 700 : 500,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease'
+                          fontWeight: isActive ? 700 : 500
                         }}
                       >
-                        <Icon size={18} />
-                        <span>{tab.label}</span>
+                        <Icon size={18} style={{ flexShrink: 0 }} />
+                        <span className="tab-desktop-label">{tab.label}</span>
+                        <span className="tab-mobile-label">{tab.mobileLabel}</span>
                       </button>
                     );
                   })}
@@ -782,7 +807,7 @@ export const PaymentModal: React.FC<Props> = ({
                       <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
                         Instant Pay via Simulated UPI Apps:
                       </span>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                      <div className="payment-upi-apps-grid">
                         {[
                           { id: 'gpay', name: 'Google Pay', icon: '🟢', color: '#1a73e8' },
                           { id: 'phonepe', name: 'PhonePe', icon: '🟣', color: '#5f259f' },
@@ -894,35 +919,67 @@ export const PaymentModal: React.FC<Props> = ({
                       <span>QR code expires in: {formattedCountdown}</span>
                     </div>
 
-                    {/* Official VoiceCart QR Card Container */}
+                    {/* Official VoiceCart Dynamic UPI QR Container */}
                     <div
                       style={{
                         position: 'relative',
-                        maxWidth: '240px',
+                        maxWidth: '250px',
                         width: '100%',
                         borderRadius: '20px',
                         overflow: 'hidden',
-                        boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.5)',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.4)',
+                        border: '2px solid rgba(99, 102, 241, 0.25)',
                         background: '#ffffff',
-                        padding: '6px'
+                        padding: '10px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
                       }}
                     >
-                      <img
-                        src="/voicecart-qr.png"
-                        alt="VoiceCart Official UPI QR"
+                      {upiQrUrl ? (
+                        <img
+                          src={upiQrUrl}
+                          alt={`VoiceCart UPI QR - Pre-filled ₹${effectiveAmount.toLocaleString()}`}
+                          style={{
+                            width: '100%',
+                            height: 'auto',
+                            display: 'block',
+                            borderRadius: '14px'
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src="/voicecart-qr.png"
+                          alt="VoiceCart UPI QR"
+                          style={{
+                            width: '100%',
+                            height: 'auto',
+                            display: 'block',
+                            borderRadius: '14px'
+                          }}
+                        />
+                      )}
+
+                      <div
                         style={{
-                          width: '100%',
-                          height: 'auto',
-                          display: 'block',
-                          borderRadius: '16px'
+                          marginTop: '8px',
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          background: 'rgba(99, 102, 241, 0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
                         }}
-                      />
+                      >
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#4338ca', letterSpacing: '0.4px' }}>
+                          VOICECART PAY • UPI DYNAMIC
+                        </span>
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                        <span style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)' }}>
                           ₹{effectiveAmount.toLocaleString()}
                         </span>
                         <span
@@ -939,12 +996,18 @@ export const PaymentModal: React.FC<Props> = ({
                           Verified Merchant
                         </span>
                       </div>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        Payee UPI ID: <strong style={{ color: 'var(--text-main)', letterSpacing: '0.3px' }}>8660318787@ibl</strong>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontSize: '0.76rem', fontWeight: 600 }}>
+                        <CheckCircle2 size={13} color="#10b981" />
+                        <span>Amount directly pre-filled when scanned</span>
+                      </div>
+
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        Payee UPI ID: <strong style={{ color: 'var(--text-main)', letterSpacing: '0.3px' }}>{merchantUpiId}</strong>
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '380px' }}>
+                    <div className="payment-qr-actions-row" style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '380px' }}>
                       <button
                         onClick={handleCopyUpi}
                         style={{
@@ -965,11 +1028,11 @@ export const PaymentModal: React.FC<Props> = ({
                         }}
                       >
                         {copiedUpi ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
-                        <span>{copiedUpi ? 'Copied 8660318787@ibl!' : 'Copy UPI ID'}</span>
+                        <span>{copiedUpi ? `Copied ${merchantUpiId}!` : 'Copy UPI ID'}</span>
                       </button>
 
                       <button
-                        onClick={() => executePayment('qr', 'VoiceCart UPI (8660318787@ibl)')}
+                        onClick={() => executePayment('qr', `VoiceCart UPI (${merchantUpiId})`)}
                         style={{
                           flex: 1.3,
                           padding: '11px',
@@ -1223,7 +1286,7 @@ export const PaymentModal: React.FC<Props> = ({
                           Select Popular Bank:
                         </span>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                        <div className="payment-banks-grid">
                           {POPULAR_BANKS.map((b) => {
                             const isSelected = selectedBank === b.id;
                             return (
@@ -1620,7 +1683,7 @@ export const PaymentModal: React.FC<Props> = ({
           </div>
 
           {/* RIGHT ORDER BREAKDOWN & SECURITY */}
-          <div style={{ padding: '24px', background: 'var(--bg-subtle)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="payment-modal-right-area">
             <div>
               <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '14px' }}>
                 Order Summary

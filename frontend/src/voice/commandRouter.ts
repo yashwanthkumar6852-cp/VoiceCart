@@ -2,6 +2,7 @@ import { voiceNormalizer } from './normalize';
 import { CommandParams, CommandResult, ConversationContext, VoiceAction } from './types';
 import { SupportedLanguage } from '../i18n/translations';
 import { api } from '../lib/api';
+import { detectAndGenerateGreeting } from './greetings';
 
 export class CommandRouter {
   public normalize(text: string): string {
@@ -131,6 +132,27 @@ export class CommandRouter {
         confidence: 0.99,
         language: 'en',
         reply: 'Language switched to English.'
+      };
+    }
+
+    // 0.5 GREETING & ASSISTANT WAKE WORDS (Hi, Hello, Hey Google, Hey Siri, GM, GA, GE, GN)
+    const targetLanguage: 'en' | 'hi' | 'kn' = (lang === 'kn' || lang === 'hi') ? lang : (currentLang === 'kn' || currentLang === 'hi' ? currentLang : 'en');
+    const greetingMatch = detectAndGenerateGreeting(text, targetLanguage);
+    if (greetingMatch) {
+      return {
+        action: 'greeting',
+        params: { greetingType: greetingMatch.type },
+        layer: 'rule',
+        confidence: 0.99,
+        language: targetLanguage,
+        reply: greetingMatch.spokenResponse,
+        assistantResponse: {
+          spokenResponse: greetingMatch.spokenResponse,
+          displayText: greetingMatch.displayText,
+          suggestedCommands: greetingMatch.suggestedCommands,
+          mood: 'helpful',
+          provider: 'rule_fallback'
+        }
       };
     }
 
@@ -1292,7 +1314,7 @@ export class CommandRouter {
     }
 
     // Fallback: If query has 2 or more characters and is not a generic greeting, treat as product search
-    if (trimmed.length >= 2 && !/^(hi|hello|hey|namaste|namaskara|bye|goodbye|help)$/i.test(trimmed)) {
+    if (trimmed.length >= 2 && !/^(hi|hello|hey|namaste|namaskara|bye|goodbye|help|gm|ga|gf|ge|gn)$/i.test(trimmed)) {
       const queryToUse = trimmed
         .replace(/\b(find|search|show me|show the|show|look for|get me|khojo|dhundo|dikhao|huduku|torisu|nodisu|please|chahiye|beku)\b/gi, '')
         .trim() || trimmed;
@@ -1309,6 +1331,26 @@ export class CommandRouter {
             : currentLang === 'hi'
             ? `${queryToUse} खोजा जा रहा है...`
             : `Searching for ${queryToUse}...`
+      };
+    }
+
+    const targetLang: 'en' | 'hi' | 'kn' = currentLang === 'auto' ? 'en' : currentLang;
+    const fallbackGreeting = detectAndGenerateGreeting(trimmed, targetLang);
+    if (fallbackGreeting) {
+      return {
+        action: 'greeting',
+        params: { greetingType: fallbackGreeting.type },
+        layer: 'rule',
+        confidence: 0.99,
+        language: targetLang,
+        reply: fallbackGreeting.spokenResponse,
+        assistantResponse: {
+          spokenResponse: fallbackGreeting.spokenResponse,
+          displayText: fallbackGreeting.displayText,
+          suggestedCommands: fallbackGreeting.suggestedCommands,
+          mood: 'helpful',
+          provider: 'rule_fallback'
+        }
       };
     }
 

@@ -23,6 +23,7 @@ export const AiCommandSchema = z.object({
     'help',
     'confirm_yes',
     'confirm_no',
+    'greeting',
     'chat'
   ]),
   params: z.record(z.string(), z.any()).default({}),
