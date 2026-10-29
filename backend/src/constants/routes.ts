@@ -10,6 +10,7 @@ export const API_ROUTES = {
   VOICE_PROCESS: '/api/voice/process',
   VOICE_TRANSCRIBE: '/api/voice/transcribe',
   VOICE_COMMAND: '/api/voice/command',
+  VOICE_ASSISTANT_RESPOND: '/api/voice/assistant-respond',
   CART: '/api/cart',
   CART_ADD: '/api/cart/add',
   CART_MERGE: '/api/cart/merge',

@@ -718,6 +718,17 @@ export const api = {
     return res.data;
   },
 
+  submitOrderFeedback: async (
+    orderId: string,
+    feedback: { rating: number; comment?: string; tags?: string[] }
+  ): Promise<{ success: boolean; message: string; order: OrderRecord }> => {
+    const res = await httpClient.post<{ success: boolean; message: string; order: OrderRecord }>(
+      `${API_ROUTES.ORDERS}/${orderId}/feedback`,
+      feedback
+    );
+    return res.data;
+  },
+
   addOrder: async (orderData: Partial<OrderRecord>): Promise<{ success: boolean; order: OrderRecord }> => {
     const res = await httpClient.post(`${API_ROUTES.ORDERS}/add`, orderData);
     return res.data;

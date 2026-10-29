@@ -121,6 +121,39 @@ router.post('/:id/reorder', requireAuth, async (req: AuthenticatedRequest, res: 
   }
 });
 
+// POST /api/orders/:id/feedback - Submit or update 5-star customer feedback
+router.post('/:id/feedback', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const orderId = String(rawId);
+    const { rating, comment, tags } = req.body;
+
+    if (!rating) {
+      return res.status(400).json({ error: 'Rating (1 to 5 stars) is required' });
+    }
+
+    const order = await orderTrackerService.submitOrderFeedback({
+      orderId,
+      userId,
+      rating: Number(rating),
+      comment: typeof comment === 'string' ? comment : undefined,
+      tags: Array.isArray(tags) ? tags : undefined
+    });
+
+    return res.json({
+      success: true,
+      message: 'Thank you for your feedback! Your review has been recorded.',
+      order
+    });
+  } catch (error: any) {
+    console.error('Order feedback submission error:', error);
+    return res.status(400).json({
+      error: error.message || 'Failed to submit feedback'
+    });
+  }
+});
+
 // GET /api/orders/:id/receipt - Generate printable invoice HTML
 router.get('/:id/receipt', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {

@@ -25,13 +25,17 @@ import {
   Phone,
   Mail,
   RefreshCw,
-  Zap
+  Zap,
+  Star,
+  Edit3,
+  MessageSquare
 } from 'lucide-react';
 import { OrderRecord, OrderStatus, OrderItem, StoreName } from '../types';
 import { api } from '../services/api';
 import { generateAndPrintReceipt } from '../utils/receiptGenerator';
 import { CancelOrderModal, OrderSupportModal } from '../components/orders/OrdersModals';
 import { PaymentModal } from '../components/PaymentModal';
+import { OrderFeedbackModal } from '../components/OrderFeedbackModal';
 import { SupportedLanguage } from '../i18n/translations';
 import { ProductImage } from '../components/ProductImage';
 
@@ -58,6 +62,7 @@ export const OrderDetailPage: React.FC<Props> = ({
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [showSupportModal, setShowSupportModal] = useState<boolean>(false);
   const [showPayModal, setShowPayModal] = useState<boolean>(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
   const [reorderingItemId, setReorderingItemId] = useState<string | null>(null);
 
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -486,6 +491,32 @@ export const OrderDetailPage: React.FC<Props> = ({
             <span>Need Help?</span>
           </button>
 
+          {/* Rate Delivery Button in Header for Delivered Orders */}
+          {order.status === 'DELIVERED' && (
+            <button
+              onClick={() => setShowFeedbackModal(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: order.customerFeedback
+                  ? 'rgba(245, 158, 11, 0.15)'
+                  : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                border: order.customerFeedback ? '1px solid rgba(245, 158, 11, 0.4)' : 'none',
+                color: order.customerFeedback ? '#f59e0b' : '#fff',
+                padding: '9px 16px',
+                borderRadius: '10px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: order.customerFeedback ? 'none' : '0 2px 10px rgba(245, 158, 11, 0.3)'
+              }}
+            >
+              <Star size={15} fill={order.customerFeedback ? '#f59e0b' : '#fff'} />
+              <span>{order.customerFeedback ? `${order.customerFeedback.rating}★ Review` : 'Rate Delivery (1-5★)'}</span>
+            </button>
+          )}
+
           {/* Cancel Order (Only if allowed) */}
           {order.canCancel && (
             <button
@@ -609,6 +640,168 @@ export const OrderDetailPage: React.FC<Props> = ({
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* 1.6 DELIVERED CUSTOMER 5-STAR FEEDBACK CARD           */}
+      {/* ---------------------------------------------------- */}
+      {order.status === 'DELIVERED' && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '22px 24px',
+            marginBottom: '24px',
+            background: order.customerFeedback
+              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%)'
+              : 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%)',
+            border: order.customerFeedback
+              ? '1px solid rgba(245, 158, 11, 0.3)'
+              : '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '16px'
+          }}
+        >
+          {order.customerFeedback ? (
+            <div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={20}
+                        fill={star <= (order.customerFeedback?.rating || 5) ? '#f59e0b' : 'none'}
+                        color={star <= (order.customerFeedback?.rating || 5) ? '#f59e0b' : 'rgba(148, 163, 184, 0.4)'}
+                        strokeWidth={2}
+                      />
+                    ))}
+                  </div>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f59e0b', margin: 0 }}>
+                    {order.customerFeedback.rating} / 5 Stars — Verified Customer Feedback
+                  </h4>
+                  <span
+                    style={{
+                      fontSize: '0.74rem',
+                      padding: '3px 10px',
+                      borderRadius: '12px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: '#10b981',
+                      fontWeight: 700
+                    }}
+                  >
+                    ✓ Verified Delivery Review
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => setShowFeedbackModal(true)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Edit3 size={13} />
+                  <span>Edit Review</span>
+                </button>
+              </div>
+
+              {order.customerFeedback.comment && (
+                <p style={{ margin: '8px 0 12px', fontSize: '0.9rem', color: 'var(--text-main)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                  "{order.customerFeedback.comment}"
+                </p>
+              )}
+
+              {order.customerFeedback.tags && order.customerFeedback.tags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                  {order.customerFeedback.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      style={{
+                        fontSize: '0.76rem',
+                        padding: '4px 10px',
+                        borderRadius: '16px',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        color: 'var(--text-secondary)',
+                        fontWeight: 500
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <CheckCircle2 size={20} color="#10b981" />
+                  <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                    Package Delivered! How was your experience?
+                  </h4>
+                </div>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                  Rate your doorstep delivery and product quality to help improve VoiceCart.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setShowFeedbackModal(true)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '2px'
+                      }}
+                      title={`Rate ${star} Stars`}
+                    >
+                      <Star
+                        size={24}
+                        fill="#f59e0b"
+                        color="#f59e0b"
+                        style={{ opacity: 0.85, transition: 'transform 0.15s ease' }}
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setShowFeedbackModal(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    border: 'none',
+                    color: '#fff',
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)'
+                  }}
+                >
+                  <Star size={15} fill="#fff" />
+                  <span>Rate Delivery (1-5★)</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1401,7 +1594,22 @@ export const OrderDetailPage: React.FC<Props> = ({
           }}
           onNavigateToOrders={() => {
             setShowPayModal(false);
-            api.getOrderById(orderId).then((o) => { if (o) setOrder(o); });
+            api.getOrderById(orderId).then((o: any) => { if (o) setOrder(o.order || o); });
+          }}
+        />
+      )}
+
+      {/* 5-STAR CUSTOMER DELIVERY FEEDBACK MODAL */}
+      {order && (
+        <OrderFeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          order={order}
+          onFeedbackSubmitted={(updated) => {
+            setOrder(updated);
+            if (showToast) {
+              showToast('Thank you! Your 5-star delivery review has been saved.');
+            }
           }}
         />
       )}

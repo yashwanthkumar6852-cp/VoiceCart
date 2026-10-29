@@ -507,6 +507,15 @@ export interface OrderRecord {
   priceComparisonSummary?: OrderPriceComparisonSummary;
   timeline: OrderTimelineStep[];
   activityLog?: OrderActivityLogEntry[];
+  customerFeedback?: OrderCustomerFeedback;
+}
+
+export interface OrderCustomerFeedback {
+  rating: number; // 1 to 5 stars
+  comment?: string;
+  tags?: string[];
+  submittedAt: string;
+  updatedAt?: string;
 }
 
 export interface PaymentConfig {

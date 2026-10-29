@@ -20,12 +20,16 @@ import {
   RefreshCw,
   ChevronLeft,
   Store,
-  Zap
+  Zap,
+  Star,
+  Edit3,
+  MessageSquare
 } from 'lucide-react';
 import { OrderRecord, OrderStatus, StoreName } from '../types';
 import { api } from '../services/api';
 import { AddExternalOrderModal } from '../components/orders/OrdersModals';
 import { PaymentModal } from '../components/PaymentModal';
+import { OrderFeedbackModal } from '../components/OrderFeedbackModal';
 import { SupportedLanguage, translations } from '../i18n/translations';
 import { ProductImage } from '../components/ProductImage';
 
@@ -62,6 +66,7 @@ export const OrdersListPage: React.FC<Props> = ({
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
   const [payingOrder, setPayingOrder] = useState<OrderRecord | null>(null);
+  const [feedbackOrder, setFeedbackOrder] = useState<OrderRecord | null>(null);
 
   const t = translations[language] || translations.en;
 
@@ -747,6 +752,167 @@ export const OrdersListPage: React.FC<Props> = ({
                   </div>
                 )}
 
+                {/* DELIVERED ORDER: 5-STAR CUSTOMER FEEDBACK & REVIEW SECTION */}
+                {order.status === 'DELIVERED' && (
+                  <div
+                    style={{
+                      marginTop: '14px',
+                      padding: '14px 16px',
+                      background: order.customerFeedback
+                        ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%)'
+                        : 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%)',
+                      border: order.customerFeedback
+                        ? '1px solid rgba(245, 158, 11, 0.3)'
+                        : '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {order.customerFeedback ? (
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  size={16}
+                                  fill={star <= (order.customerFeedback?.rating || 5) ? '#f59e0b' : 'none'}
+                                  color={star <= (order.customerFeedback?.rating || 5) ? '#f59e0b' : 'rgba(148, 163, 184, 0.4)'}
+                                  strokeWidth={2}
+                                />
+                              ))}
+                            </div>
+                            <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#f59e0b' }}>
+                              {order.customerFeedback.rating} / 5 Stars
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                padding: '2px 8px',
+                                borderRadius: '10px',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                color: '#10b981',
+                                fontWeight: 700
+                              }}
+                            >
+                              ✓ Verified Customer Review
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() => setFeedbackOrder(order)}
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.06)',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '6px',
+                              padding: '4px 10px',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              color: 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <Edit3 size={12} />
+                            <span>Edit Review</span>
+                          </button>
+                        </div>
+
+                        {order.customerFeedback.comment && (
+                          <p style={{ margin: '8px 0 4px', fontSize: '0.82rem', color: 'var(--text-main)', fontStyle: 'italic', lineHeight: 1.4 }}>
+                            "{order.customerFeedback.comment}"
+                          </p>
+                        )}
+
+                        {order.customerFeedback.tags && order.customerFeedback.tags.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                            {order.customerFeedback.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                style={{
+                                  fontSize: '0.7rem',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  background: 'rgba(255, 255, 255, 0.08)',
+                                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                                  color: 'var(--text-secondary)',
+                                  fontWeight: 500
+                                }}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontWeight: 700, fontSize: '0.85rem' }}>
+                            <CheckCircle2 size={16} />
+                            <span>Package Delivered! How was your experience?</span>
+                          </div>
+                          <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                            Rate this delivery from 1 to 5 stars to help fellow shoppers
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ display: 'flex', gap: '3px' }}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                onClick={() => setFeedbackOrder(order)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '2px'
+                                }}
+                                title={`Rate ${star} Stars`}
+                              >
+                                <Star
+                                  size={20}
+                                  fill="#f59e0b"
+                                  color="#f59e0b"
+                                  style={{ opacity: 0.85, transition: 'transform 0.15s ease' }}
+                                />
+                              </button>
+                            ))}
+                          </div>
+
+                          <button
+                            onClick={() => setFeedbackOrder(order)}
+                            style={{
+                              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                              border: 'none',
+                              color: '#fff',
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                            }}
+                          >
+                            <Star size={13} fill="#fff" />
+                            <span>Rate Delivery (1-5★)</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* CARD ACTIONS ROW */}
                 <div className="order-card-actions">
                   {/* Pay Before Delivery Primary Action */}
@@ -773,6 +939,35 @@ export const OrdersListPage: React.FC<Props> = ({
                     >
                       <Zap size={14} />
                       <span>Pay Before Delivery</span>
+                    </button>
+                  )}
+
+                  {/* 5-Star Feedback Action for Delivered Orders */}
+                  {order.status === 'DELIVERED' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFeedbackOrder(order);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: order.customerFeedback
+                          ? 'rgba(245, 158, 11, 0.12)'
+                          : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                        border: order.customerFeedback ? '1px solid rgba(245, 158, 11, 0.4)' : 'none',
+                        color: order.customerFeedback ? '#f59e0b' : '#fff',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: order.customerFeedback ? 'none' : '0 2px 8px rgba(245, 158, 11, 0.25)'
+                      }}
+                    >
+                      <Star size={14} fill={order.customerFeedback ? '#f59e0b' : '#fff'} />
+                      <span>{order.customerFeedback ? `${order.customerFeedback.rating}★ Feedback` : 'Rate (1-5★)'}</span>
                     </button>
                   )}
 
@@ -960,6 +1155,21 @@ export const OrdersListPage: React.FC<Props> = ({
           }}
         />
       )}
+
+      {/* 5-STAR CUSTOMER DELIVERY FEEDBACK MODAL */}
+      <OrderFeedbackModal
+        isOpen={Boolean(feedbackOrder)}
+        onClose={() => setFeedbackOrder(null)}
+        order={feedbackOrder}
+        onFeedbackSubmitted={(updated) => {
+          setOrders((prev) =>
+            prev.map((o) => (o.orderId === updated.orderId || o.id === updated.id ? updated : o))
+          );
+          if (showToast) {
+            showToast('Thank you! Your 5-star delivery feedback has been saved.');
+          }
+        }}
+      />
     </div>
   );
 };

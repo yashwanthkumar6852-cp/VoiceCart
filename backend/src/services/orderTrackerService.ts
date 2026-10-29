@@ -856,6 +856,53 @@ export class OrderTrackerService {
     const enriched = this.enrichOrderRecord(newOrder);
     return dbClient.saveOrder(enriched, userId);
   }
+
+  /**
+   * Submit or update 5-star customer feedback and review for an order
+   */
+  public async submitOrderFeedback(params: {
+    orderId: string;
+    userId: string;
+    rating: number;
+    comment?: string;
+    tags?: string[];
+  }): Promise<OrderRecord> {
+    const { orderId, userId, rating, comment, tags } = params;
+
+    const numRating = Number(rating);
+    if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+      throw new Error('Rating must be an integer between 1 and 5 stars.');
+    }
+
+    const order = await this.getOrderById(orderId, userId);
+    if (!order) {
+      throw new Error('Order not found or you are not authorized to rate this order.');
+    }
+
+    const nowIso = new Date().toISOString();
+    const isUpdate = Boolean(order.customerFeedback);
+
+    order.customerFeedback = {
+      rating: Math.round(numRating),
+      comment: (comment || '').trim(),
+      tags: Array.isArray(tags) ? tags : [],
+      submittedAt: order.customerFeedback?.submittedAt || nowIso,
+      updatedAt: isUpdate ? nowIso : undefined
+    };
+
+    order.activityLog = order.activityLog || [];
+    order.activityLog.push({
+      id: `act_${Date.now()}`,
+      title: isUpdate ? 'Delivery Review Updated' : 'Customer 5-Star Delivery Feedback Submitted',
+      description: `Rated ${Math.round(numRating)}/5 stars${comment ? `: "${comment.slice(0, 80)}${comment.length > 80 ? '...' : ''}"` : ''}`,
+      timestamp: nowIso,
+      type: 'info'
+    });
+
+    const enriched = this.enrichOrderRecord(order);
+    await dbClient.saveOrder(enriched, userId);
+    return enriched;
+  }
 }
 
 export const orderTrackerService = new OrderTrackerService();
