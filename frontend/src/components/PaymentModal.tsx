@@ -387,7 +387,7 @@ export const PaymentModal: React.FC<Props> = ({
         const confirmedOrderId = confirmation.orderId || existingOrder?.orderId || demoOrder?.id || internalOrderId || `order_${Date.now()}`;
         const confirmedPaymentId = confirmation.paymentId || `pay_${Date.now()}`;
         const confirmedMethod = confirmation.method || methodCode;
-        const confirmedPaidAt = confirmation.paidAt || new Date().toISOString();
+        const confirmedPaidAt = confirmation.paidAt || (methodCode === 'cod' ? '' : new Date().toISOString());
 
         setCompletedPayment({
           orderId: confirmedOrderId,
@@ -398,10 +398,17 @@ export const PaymentModal: React.FC<Props> = ({
           order: confirmation.order
         });
 
+        const isCodOrder =
+          Boolean(confirmation.isCodPending) ||
+          confirmation.status === 'COD_PENDING' ||
+          confirmation.status === 'cod_pending' ||
+          methodCode === 'cod' ||
+          (confirmation.method || '').toLowerCase().includes('cod');
+
         if (confirmation.isPaid || isPayBeforeDelivery) {
           setPaymentView('success');
           if (confirmation.order) onPaymentSuccess(confirmation.order, confirmedPaymentId, confirmedMethod);
-        } else if (confirmation.isCodPending) {
+        } else if (isCodOrder) {
           setPaymentView('cod_pending');
           if (confirmation.order) onPaymentSuccess(confirmation.order, confirmedPaymentId, confirmedMethod);
         } else if (confirmation.isPending) {

@@ -313,7 +313,7 @@ router.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res: Resp
     const nowIso = new Date().toISOString();
     targetOrder.paymentId = confirmation.paymentId;
     targetOrder.paymentMethod = confirmation.method;
-    targetOrder.status = (confirmation.status === 'cod_pending' ? 'CONFIRMED' : confirmation.status) as any;
+    targetOrder.status = (confirmation.status === 'cod_pending' ? 'COD_PENDING' : confirmation.status) as any;
     targetOrder.paidAt = confirmation.status === 'PAID' ? nowIso : undefined;
 
     if (confirmation.status === 'PAID') {
@@ -346,7 +346,8 @@ router.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res: Resp
         }
       }
     } else if (confirmation.status === 'cod_pending') {
-      targetOrder.paymentMethod = 'COD';
+      targetOrder.status = 'COD_PENDING';
+      targetOrder.paymentMethod = 'Cash on Delivery (COD)';
       targetOrder.paymentStatus = 'PENDING';
       targetOrder.isCodEligibleForPrePayment = true;
       targetOrder.paymentDetails = {
@@ -358,14 +359,14 @@ router.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res: Resp
         paidOnlineBeforeDelivery: false,
         isDemo: true
       };
-      if (targetOrder.timeline[1]) {
-        targetOrder.timeline[1].completed = true;
-        targetOrder.timeline[1].timestamp = nowIso;
-        targetOrder.timeline[1].description = 'Order Confirmed with Cash on Delivery (Pay cash on delivery or pay online before delivery)';
+      if (targetOrder.timeline[0]) {
+        targetOrder.timeline[0].completed = true;
+        targetOrder.timeline[0].timestamp = nowIso;
+        targetOrder.timeline[0].description = 'Order Placed with Cash on Delivery (Pay cash on delivery or pay online before delivery)';
       }
-      if (targetOrder.timeline[2]) {
-        targetOrder.timeline[2].completed = true;
-        targetOrder.timeline[2].timestamp = nowIso;
+      if (targetOrder.timeline[1]) {
+        targetOrder.timeline[1].completed = false;
+        targetOrder.timeline[1].current = true;
       }
 
       // Clear placed items from user cart
@@ -401,14 +402,14 @@ router.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res: Resp
       success: true,
       status: enrichedOrder.status,
       isPaid: enrichedOrder.status === 'PAID',
-      isCodPending: enrichedOrder.status === 'COD_PENDING',
+      isCodPending: enrichedOrder.status === 'COD_PENDING' || confirmation.status === 'cod_pending',
       isPending: enrichedOrder.status === 'PENDING_VERIFICATION' || (enrichedOrder.status as any) === 'PENDING',
       isFailed: enrichedOrder.status === 'FAILED',
       order: enrichedOrder,
       paymentId: confirmation.paymentId,
       orderId: enrichedOrder.orderId,
       amount: enrichedOrder.totalAmount,
-      paidAt: nowIso,
+      paidAt: targetOrder.paidAt || (confirmation.status === 'PAID' ? nowIso : undefined),
       method: confirmation.method,
       message: confirmation.message
     });

@@ -52,7 +52,15 @@ export const generateAndPrintReceipt = (
         </tr>
       `;
 
-  const dateFormatted = new Date(finalPaidAt).toLocaleString('en-IN', {
+  const isCod = Boolean(
+    (finalMethod || '').toLowerCase().includes('cod') ||
+    order.status === 'COD_PENDING' ||
+    order.paymentDetails?.methodCode === 'cod'
+  );
+  const isPaid = order.paymentStatus === 'PAID' || Boolean(order.paidOnlineBeforeDelivery) || (!isCod && Boolean(finalPaidAt));
+
+  const validDateSource = finalPaidAt || order.orderedAt || order.timeline?.[0]?.timestamp || new Date().toISOString();
+  const dateFormatted = new Date(validDateSource).toLocaleString('en-IN', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -78,6 +86,7 @@ export const generateAndPrintReceipt = (
         .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #6366f1; padding-bottom: 18px; margin-bottom: 20px; }
         .brand { font-size: 24px; font-weight: 800; color: #6366f1; display: flex; align-items: center; gap: 8px; }
         .demo-badge { background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid #86efac; text-transform: uppercase; }
+        .demo-badge-cod { background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid #fcd34d; text-transform: uppercase; }
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; font-size: 13px; background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; }
         .meta-item { display: flex; flex-direction: column; }
         .meta-label { font-size: 11px; color: #64748b; margin-bottom: 2px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
@@ -102,7 +111,7 @@ export const generateAndPrintReceipt = (
             <div style="font-size: 12px; color: #64748b; margin-top: 3px;">Live Multi-Store Shopping Assistant • Official Tax Receipt</div>
           </div>
           <div style="text-align: right;">
-            <span class="demo-badge">PAID INVOICE</span>
+            ${isPaid ? '<span class="demo-badge">PAID INVOICE</span>' : '<span class="demo-badge-cod">COD ORDER (PAY ON DELIVERY)</span>'}
             <div style="font-size: 12px; color: #64748b; margin-top: 6px;">Order: <strong>#${order.orderId}</strong></div>
           </div>
         </div>
@@ -117,7 +126,7 @@ export const generateAndPrintReceipt = (
             <div style="color: #0f172a; line-height: 1.4; margin-top: 4px;">
               <div>Method: <strong>${finalMethod}</strong></div>
               <div>Transaction Ref: <code style="color: #6366f1; font-weight: 700;">${finalPaymentId}</code></div>
-              <div>Status: <strong style="color: #16a34a;">PAID (Verified)</strong></div>
+              <div>Status: <strong style="color: ${isPaid ? '#16a34a' : '#d97706'};">${isPaid ? 'PAID (Verified)' : 'Pending Doorstep Collection (COD)'}</strong></div>
               <div>Date & Time: ${dateFormatted}</div>
             </div>
           </div>
