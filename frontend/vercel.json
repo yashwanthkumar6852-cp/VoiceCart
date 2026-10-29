@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://voicecart-backend.onrender.com/api/$1"
+      "destination": "https://fix-comparative-pulled-keno.trycloudflare.com/api/$1"
     },
     {
       "source": "/(.*)",

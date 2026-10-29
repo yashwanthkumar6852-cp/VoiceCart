@@ -70,6 +70,10 @@ export const useVoice = (
   const autoListenRef = useRef(autoListen);
   const userStoppedRef = useRef(false);
   const autoRestartTimerRef = useRef<any>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const liveTranscriptRef = useRef(liveTranscript);
+  liveTranscriptRef.current = liveTranscript;
 
   useEffect(() => {
     if (options?.autoListen !== undefined) {
@@ -341,6 +345,15 @@ export const useVoice = (
     } catch (permErr: any) {
       console.warn('Microphone permission check failed:', permErr);
       const isDenied = permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError';
+      if (isDenied) {
+        autoListenRef.current = false;
+        setAutoListenState(false);
+        userStoppedRef.current = true;
+        if (autoRestartTimerRef.current) {
+          clearTimeout(autoRestartTimerRef.current);
+          autoRestartTimerRef.current = null;
+        }
+      }
       setState('error');
       setError({
         code: isDenied ? 'not-allowed' : 'audio-capture',
@@ -416,6 +429,13 @@ export const useVoice = (
             canRetry: true
           });
         } else if (errorCode === 'not-allowed') {
+          autoListenRef.current = false;
+          setAutoListenState(false);
+          userStoppedRef.current = true;
+          if (autoRestartTimerRef.current) {
+            clearTimeout(autoRestartTimerRef.current);
+            autoRestartTimerRef.current = null;
+          }
           setState('error');
           setError({
             code: 'not-allowed',
@@ -445,9 +465,7 @@ export const useVoice = (
             }
           }, 350);
         } else {
-          if (state === 'listening' && !liveTranscript) {
-            setState('idle');
-          }
+          setState((prev) => (prev === 'listening' && !liveTranscriptRef.current ? 'idle' : prev));
         }
       };
 
@@ -457,7 +475,7 @@ export const useVoice = (
       console.warn('SpeechRecognition start error, falling back to MediaRecorder:', err);
       startMediaRecorderFallback();
     }
-  }, [cleanupResources, getUserFriendlyMessage, normalizedLang, onFinal, setupAudioVisualizer, startMediaRecorderFallback, state, liveTranscript]);
+  }, [cleanupResources, getUserFriendlyMessage, normalizedLang, onFinal, setupAudioVisualizer, startMediaRecorderFallback]);
 
   const stopListening = useCallback(() => {
     userStoppedRef.current = true;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Mic,
   Bot,
@@ -94,15 +94,28 @@ export const DashboardRightSidebar: React.FC<Props> = ({
 
   const isListening = voiceState === 'listening';
 
+  const startListeningRef = useRef(startListening);
+  startListeningRef.current = startListening;
+
   // Automatically start continuous auto-listening on mount if enabled
   useEffect(() => {
     if (autoDetect) {
       const timer = setTimeout(() => {
-        startListening();
+        startListeningRef.current();
       }, 700);
       return () => clearTimeout(timer);
     }
-  }, [autoDetect, startListening]);
+  }, [autoDetect]);
+
+  // If voice state encounters an error (e.g. mic permission denied), automatically disable autoDetect
+  useEffect(() => {
+    if (voiceState === 'error' && autoDetect) {
+      setAutoDetect(false);
+      try {
+        localStorage.setItem('voicecart_auto_detect', 'false');
+      } catch {}
+    }
+  }, [voiceState, autoDetect]);
 
   const handleToggleAutoDetect = (forceState?: boolean) => {
     const nextState = forceState !== undefined ? forceState : !autoDetect;
